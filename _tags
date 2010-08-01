@@ -1,0 +1,2 @@
+<gui/>: include
+<gui/gui.*>: use_gtk
