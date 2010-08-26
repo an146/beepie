@@ -18,11 +18,11 @@ let destroy () = GMain.Main.quit ();;
 
 let main () =
   let window = GWindow.window ~border_width:10 () in
-  window#event#connect#delete ~callback:delete_event;
-  window#connect#destroy ~callback:destroy;
+  ignore (window#event#connect#delete ~callback:delete_event);
+  ignore (window#connect#destroy ~callback:destroy);
   let button = GButton.button ~label:"Hello World" ~packing:window#add () in
-  button#connect#clicked ~callback:hello;
-  button#connect#clicked ~callback:window#destroy;
+  ignore (button#connect#clicked ~callback:hello);
+  ignore (button#connect#clicked ~callback:window#destroy);
   window#show ();
   GMain.Main.main ();;
 
