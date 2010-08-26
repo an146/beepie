@@ -1,1 +1,6 @@
 _build
+*.swp
+*.cmi
+*.cmo
+*.cmx
+*.o
