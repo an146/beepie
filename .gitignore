@@ -4,3 +4,5 @@ _build
 *.cmo
 *.cmx
 *.o
+*.omc
+.omakedb*

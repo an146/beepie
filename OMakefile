@@ -1,0 +1,16 @@
+SRC_DIRS[] =
+   gui
+   tests
+
+vmount(-l, src, _build)
+foreach (d, $(SRC_DIRS))
+   mkdir -p _build/$(d)
+   vmount(-l, src/$(d), _build/$(d))
+   # WTF: vmount is scoped, but works without export
+   # export
+
+.SUBDIRS: _build
+
+.PHONY: clean
+clean:
+  rm -Rf _build
