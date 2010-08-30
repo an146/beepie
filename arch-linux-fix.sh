@@ -4,7 +4,7 @@
 	exit 1
 }
 
-ln -s /usr/lib/ocaml/lablgtk2 /usr/lib/ocaml/site-lib
+mkdir /usr/lib/ocaml/site-lib/lablgtk2
 
 cat > /usr/lib/ocaml/site-lib/lablgtk2/META <<END
 requires=""
