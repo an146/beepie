@@ -17,12 +17,13 @@ let delete_event ev =
 let destroy () = GMain.Main.quit ();;
 
 let main () =
+  let _ = GtkMain.Main.init () in
   let window = GWindow.window ~border_width:10 () in
-  ignore (window#event#connect#delete ~callback:delete_event);
-  ignore (window#connect#destroy ~callback:destroy);
+  let _ = window#event#connect#delete ~callback:delete_event in
+  let _ = window#connect#destroy ~callback:destroy in
   let button = GButton.button ~label:"Hello World" ~packing:window#add () in
-  ignore (button#connect#clicked ~callback:hello);
-  ignore (button#connect#clicked ~callback:window#destroy);
+  let _ = button#connect#clicked ~callback:hello in
+  let _ = button#connect#clicked ~callback:window#destroy in
   window#show ();
   GMain.Main.main ();;
 
