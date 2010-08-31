@@ -1,5 +1,6 @@
 OCAMLPACKS[] =
    lablgtk2
+   unix
 
 FILES[] =
    gui

@@ -104,13 +104,14 @@ io_set_device(value type, value id)
 		caml_failwith("unsupported device type");
 
 	int client, port;
-	if (sscanf(String_val(id), "%i:%i", &client, &port) < 2)
-		caml_failwith("can't parse sequencer port; should be <client id>:<port id>");
+	if (sscanf(String_val(id), "alsa/%i:%i", &client, &port) < 2)
+		caml_failwith("can't parse sequencer port; should be alsa/<client id>:<port id>");
 
 	if (snd_seq_connect_to(g_seq, g_port, client, port) < 0)
 		caml_failwith("snd_seq_connect_to() failed");
 
-	snd_seq_disconnect_to(g_seq, g_port, g_conn_client, g_conn_port);
+	if (g_conn_client >= 0)
+		snd_seq_disconnect_to(g_seq, g_port, g_conn_client, g_conn_port);
 	g_conn_client = client;
 	g_conn_port = port;
 	CAMLreturn(Val_unit);
@@ -123,15 +124,18 @@ io_output(value raw)
 
 	snd_seq_event_t ev;
 	snd_seq_ev_clear(&ev);
-	if (snd_midi_event_encode(g_event, String_val(raw), caml_string_length(raw), &ev) <= 0 ||
-		ev.type == SND_SEQ_EVENT_NONE)
-			CAMLreturn(Val_unit);
+	if (snd_midi_event_encode(g_event, String_val(raw), caml_string_length(raw), &ev) <= 0)
+		caml_failwith("snd_midi_event_encode() failed");
+
+	if (ev.type == SND_SEQ_EVENT_NONE)
+		caml_failwith("ev.type == SND_SEQ_EVENT_NONE");
 
 	snd_seq_ev_set_source(&ev, g_port);
 	snd_seq_ev_set_subs(&ev);
 	snd_seq_ev_set_direct(&ev);
 
-	snd_seq_event_output(g_seq, &ev);
+	if (snd_seq_event_output(g_seq, &ev) < 0)
+		caml_failwith("snd_seq_event_output() failed");
 	CAMLreturn(Val_unit);
 }
 
