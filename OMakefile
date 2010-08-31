@@ -1,5 +1,6 @@
 SRC_DIRS[] =
    gui
+   mid
    tests
 
 vmount(-l, src, _build)

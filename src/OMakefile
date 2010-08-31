@@ -5,4 +5,10 @@ if $(not $(OCAMLFIND_EXISTS))
    eprintln(You need to install ocamlfind and run "omake --configure".)
    exit 1
 
-.SUBDIRS: gui tests
+# fix for Arch Linux
+CFLAGS += -I /usr/lib/ocaml
+
+BINDINGS = alsa
+BINDINGS_LINK_FLAGS = -cclib -lasound
+
+.SUBDIRS: mid gui tests

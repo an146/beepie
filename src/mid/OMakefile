@@ -1,0 +1,1 @@
+StaticCLibrary(bindings, io_$(BINDINGS))
