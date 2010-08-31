@@ -1,1 +1,2 @@
 StaticCLibrary(bindings, io_$(BINDINGS))
+OCamlLibrary(libmid, midiio)
