@@ -8,5 +8,7 @@ PROGRAM = gui
 
 OCAML_CLIBS += ../mid/bindings
 OCAML_LINK_FLAGS += $(BINDINGS_LINK_FLAGS)
-.DEFAULT: $(OCamlProgram $(PROGRAM), $(FILES))
+
+.PHONY: gui
+gui: $(OCamlProgram $(PROGRAM), $(FILES))
 

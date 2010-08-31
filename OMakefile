@@ -12,6 +12,13 @@ foreach (d, $(SRC_DIRS))
 
 .SUBDIRS: _build
 
+.PHONY: test-gui
+test-gui: gui
+   ./_build/gui/gui
+
+.DEFAULT: gui
+#.DEFAULT: test-gui
+
 .PHONY: clean
 clean:
-  rm -Rf _build
+   rm -Rf _build
