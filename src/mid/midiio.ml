@@ -10,3 +10,4 @@ external flush_output: unit -> unit = "io_flush_output";;
 let enum_output_devices () = enum_devices OutputDevice;;
 let set_output_device = set_device OutputDevice;;
 
+(* vim: set ts=3 sw=3 tw=80 : *)
