@@ -1,10 +1,12 @@
 type device_type = InputDevice | OutputDevice;;
+type device_id = string;;
+type device = { id: device_id; name: string; };;
 
 external init: unit -> unit = "io_init"
 external fini: unit -> unit = "io_fini"
-external enum_devices: device_type -> string list = "io_enum_devices";;
-external get_device: device_type -> string = "io_get_device";;
-external set_device: device_type -> string -> unit = "io_set_device";;
+external enum_devices: device_type -> device list = "io_enum_devices";;
+external get_device: device_type -> device_id = "io_get_device";;
+external set_device: device_type -> device_id -> unit = "io_set_device";;
 external output: string -> unit = "io_output";;
 external flush_output: unit -> unit = "io_flush_output";;
 

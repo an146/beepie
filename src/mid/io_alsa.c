@@ -50,7 +50,7 @@ CAMLprim value
 io_enum_devices(value type)
 {
 	CAMLparam1(type);
-	CAMLlocal2(ret, cons);
+	CAMLlocal3(ret, cons, device);
 
 	if (Long_val(type) != OUTPUT_DEVICE)
 		caml_failwith("unsupported device type");
@@ -86,8 +86,12 @@ io_enum_devices(value type)
 				snd_seq_port_info_get_port(pinfo)
 			);
 
+			device = caml_alloc(2, 0);
+			Store_field(device, 0, caml_copy_string(id));
+			Store_field(device, 1, caml_copy_string(snd_seq_port_info_get_name(pinfo)));
+
 			cons = caml_alloc(2, 0);
-			Store_field(cons, 0, caml_copy_string(id));
+			Store_field(cons, 0, device);
 			Store_field(cons, 1, ret);
 			ret = cons;
 		}

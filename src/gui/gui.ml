@@ -19,19 +19,27 @@ let delete_event ev =
 let destroy () = Main.quit ();;
 
 let refresh_devices menu =
+   List.iter (fun c -> c#destroy ()) menu#all_children;
+
    let factory = new GMenu.factory menu in
    let devices = Midiio.enum_output_devices () in
-   let group_ref = ref None in
-   let add_item device =
-      let callback = fun set -> if set then Midiio.set_output_device device in
-      let active = (Midiio.get_output_device () = device) in
-      let add_item group = factory#add_radio_item device ~active ~callback ~group in
-      let item = add_item !group_ref in
-      if !group_ref = None then
-         group_ref := item#group
+   let have_active = ref false in
+   let create_item device group =
+      let id = device.Midiio.id in
+      let name = device.Midiio.name in
+      let callback = fun set -> if set then Midiio.set_output_device id in
+      let label = id ^ "    " ^ name in
+      let active = (Midiio.get_output_device () = id) in
+      if active then have_active := true;
+      factory#add_radio_item label ~active ~callback ~group
    in
-   List.iter (fun c -> c#destroy ()) menu#all_children;
-   List.iter add_item devices;;
+   let first = create_item (List.hd devices) None in
+   let create_item device = create_item device first#group in
+   let _ = List.map create_item (List.tl devices) in
+   if not !have_active then begin
+      first#set_active true;
+      Midiio.set_output_device (List.hd devices).Midiio.id
+   end;;
 
 let create_menu packing =
    let menubar = GMenu.menu_bar ~packing () in
@@ -71,14 +79,7 @@ let main () =
    let button = GButton.button ~label:"Hello World" ~packing:vbox#add () in
    let _ = button#connect#clicked ~callback:hello in
 
-   let print_device d = Printf.printf "Device: %s\n" d; flush stdout in
-   let devices = Midiio.enum_output_devices () in
-   let device = List.hd devices in
-   List.iter print_device devices;
-   Midiio.set_output_device device;
    Midiio.set_program 0 0;
-   Printf.printf "Set device: %s\n" device;
-   flush stdout;
    window#maximize ();
    window#show ();
    Main.main ();
