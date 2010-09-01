@@ -18,8 +18,48 @@ let delete_event ev =
 
 let destroy () = Main.quit ();;
 
+let refresh_devices menu =
+   let factory = new GMenu.factory menu in
+   let devices = Midiio.enum_output_devices () in
+   let group_ref = ref None in
+   let add_item device =
+      let callback = fun set -> if set then Midiio.set_output_device device in
+      let active = (Midiio.get_output_device () = device) in
+      let add_item group = factory#add_radio_item device ~active ~callback ~group in
+      let item = add_item !group_ref in
+      if !group_ref = None then
+         group_ref := item#group
+   in
+   List.iter (fun c -> c#destroy ()) menu#all_children;
+   List.iter add_item devices;;
+
+let create_menu packing =
+   let menubar = GMenu.menu_bar ~packing () in
+   let factory = new GMenu.factory menubar in
+   let accel_group = factory#accel_group in
+
+   (* top-level *)
+   let m_file = factory#add_submenu "File" in
+   let m_settings = factory#add_submenu "Settings" in
+
+   (* File *)
+   let factory = new GMenu.factory m_file ~accel_group in
+   let _ = factory#add_item "Quit" ~key:_Q ~callback: Main.quit in
+
+   (* Settings *)
+   let factory = new GMenu.factory m_settings ~accel_group in
+   let outdevice = factory#add_submenu "Output device" in
+   let _ =
+      let clb = fun () -> refresh_devices outdevice in
+      clb ();
+      factory#add_item "Refresh devices" ~callback: clb
+   in
+
+   menubar;;
+
 let main () =
    let _ = GtkMain.Main.init () in
+   Midiio.init ();
 
    (* Window *)
    let window = GWindow.window ~border_width:0 () in
@@ -27,21 +67,11 @@ let main () =
    let _ = window#connect#destroy ~callback:destroy in
    let vbox = GPack.vbox ~packing:window#add () in
 
-   (* Menu *)
-   let menubar = GMenu.menu_bar ~packing:vbox#pack () in
-   let factory = new GMenu.factory menubar in
-   let accel_group = factory#accel_group in
-
-   (* Menu -> File *)
-   let file_menu = factory#add_submenu "File" in
-   let factory = new GMenu.factory file_menu ~accel_group in
-   let _ = factory#add_item "Quit" ~key:_Q ~callback: Main.quit in
-
+   let _ = create_menu vbox#pack in
    let button = GButton.button ~label:"Hello World" ~packing:vbox#add () in
    let _ = button#connect#clicked ~callback:hello in
 
    let print_device d = Printf.printf "Device: %s\n" d; flush stdout in
-   Midiio.init ();
    let devices = Midiio.enum_output_devices () in
    let device = List.hd devices in
    List.iter print_device devices;

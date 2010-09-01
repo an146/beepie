@@ -97,6 +97,18 @@ io_enum_devices(value type)
 }
 
 CAMLprim value
+io_get_device(value type)
+{
+	CAMLparam1(type);
+	if (Long_val(type) != OUTPUT_DEVICE)
+		caml_failwith("unsupported device type");
+
+	char id[64];
+	sprintf(id, "alsa/%i:%i", g_conn_client, g_conn_port);
+	CAMLreturn(caml_copy_string(id));
+}
+
+CAMLprim value
 io_set_device(value type, value id)
 {
 	CAMLparam2(type, id);
