@@ -50,7 +50,10 @@ class menu packing =
          let factory = new GMenu.factory m_settings ~accel_group in
          m_output_device <- Some (factory#add_submenu "Output device");
          let callback = self#refresh_devices in
-         ignore (factory#add_item "Refresh devices" ~callback)
+         let _ = factory#add_item "Refresh devices" ~callback in
+         let callback = fun () -> Midiio.output_note 0 60 1.0 in
+         let _ = factory#add_item "Test sound" ~callback in
+         ()
    end;;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

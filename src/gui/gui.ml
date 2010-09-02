@@ -20,14 +20,12 @@ let get_save_filename () =
 
 let main () =
    Midiio.init ();
-   MainWindow.init ();
+   Midiio.set_program 0 0;
 
+   MainWindow.init ();
    let window = MainWindow.window in
    window#maximize ();
    window#show ();
-
-   Midiio.set_program 0 0;
-   Midiio.output_note 0 60 1.0;
 
    GMain.Main.main ();
    Midiio.fini ();;
