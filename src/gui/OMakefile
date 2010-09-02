@@ -4,6 +4,7 @@ OCAMLPACKS[] =
 
 FILES[] =
    gui
+   mainWindow
    menu
 
 PROGRAM = gui
