@@ -3,6 +3,7 @@ OCAMLPACKS[] =
    unix
 
 FILES[] =
+   fileDialog
    gui
    mainWindow
    menu

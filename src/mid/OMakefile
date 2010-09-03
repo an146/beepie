@@ -1,2 +1,8 @@
+FILES[] =
+   import
+   export
+   midifile
+   midiio
+
 StaticCLibrary(bindings, io_$(BINDINGS))
-OCamlLibrary(libmid, midiio)
+OCamlLibrary(libmid, $(FILES))
