@@ -60,7 +60,14 @@ let do_import channel =
 
 let import filename =
    let channel = open_in_bin filename in
-   let file = do_import channel in
+   let file =
+      try do_import channel
+      with e ->
+         close_in channel;
+         match e with
+           End_of_file -> failwith "unexpected end of file"
+         | e -> raise e
+   in
    close_in channel;
    file#set_filename filename;
    file;;
