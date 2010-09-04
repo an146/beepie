@@ -9,7 +9,7 @@ module type MainWindow_sig =
 
 module Make (MainWindow : MainWindow_sig) = struct
    let new_file () =
-      MainWindow.add_file (new Midifile.file)
+      MainWindow.add_file (new Midifile.file 240)
 
    let open_files () =
       let filenames = FileDialog.get_open_filenames (MainWindow.window) in
@@ -24,7 +24,7 @@ module Make (MainWindow : MainWindow_sig) = struct
          method refresh_devices () =
             let menu =
                match m_output_device with
-                  None -> raise (Failure "menu not constructed")
+                  None -> failwith "menu not constructed"
                |  Some m -> m
             in
             List.iter (fun c -> c#destroy ()) menu#all_children;
