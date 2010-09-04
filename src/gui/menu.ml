@@ -24,8 +24,8 @@ module Make (MainWindow : MainWindow_sig) = struct
          method refresh_devices () =
             let menu =
                match m_output_device with
-                  None -> failwith "menu not constructed"
-               |  Some m -> m
+                 None -> failwith "menu not constructed"
+               | Some m -> m
             in
             List.iter (fun c -> c#destroy ()) menu#all_children;
 

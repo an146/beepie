@@ -15,5 +15,5 @@ exception DialogCancelled;;
 
 let get_save_filename parent =
    match choose_files `SAVE parent with
-      [] -> raise DialogCancelled
-   |  l -> List.hd l;;
+     [] -> raise DialogCancelled
+   | l -> List.hd l;;
