@@ -31,12 +31,10 @@ let rec get_chunk ?(really_expect = false) expected_magic channel =
       Stream.of_string chunk
    else begin (* magic != expected_magic *)
       if really_expect then
-         raise Unexpected_Magic
-      else begin
-         let new_pos = (pos_in channel) + length in
-         seek_in channel new_pos;
-         get_chunk expected_magic channel
-      end
+         raise Unexpected_Magic;
+      let new_pos = (pos_in channel) + length in
+      seek_in channel new_pos;
+      get_chunk expected_magic channel
    end;;
 
 let really_get_chunk = get_chunk ~really_expect: true
