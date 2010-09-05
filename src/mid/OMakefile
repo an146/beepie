@@ -1,6 +1,7 @@
 FILES[] =
    import
    export
+   midiCmd
    midifile
    midiio
 

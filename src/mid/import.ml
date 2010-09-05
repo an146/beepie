@@ -8,11 +8,16 @@ let read_int n stream =
 
 let read_word = read_int 2;;
 
-let bigendian_to_int s =
-   read_int (String.length s) (Stream.of_string s);;
+let bigendian_to_int str =
+   read_int (String.length str) (Stream.of_string str);;
 
-let import_track file track =
-   ignore track;;
+let import_track file track_s =
+   let track = file#add_track () in
+   ignore track;
+   let process_cmd = function
+      cmd -> ignore cmd
+   in
+   Stream.iter process_cmd (MidiCmd.parse_stream track_s)
 
 let read_chunk_header channel =
    let magic = String.create 4 in
@@ -21,6 +26,7 @@ let read_chunk_header channel =
    really_input channel length 0 4;
    (magic, bigendian_to_int length);;
 
+(* в рот мне ноги! *)
 exception Unexpected_Magic
 
 let rec get_chunk ?(really_expect = false) expected_magic channel =
@@ -40,19 +46,19 @@ let rec get_chunk ?(really_expect = false) expected_magic channel =
 let really_get_chunk = get_chunk ~really_expect: true
 
 let do_import channel =
-   let header =
+   let header_s =
       try really_get_chunk "MThd" channel
       with Unexpected_Magic -> failwith "not a MIDI file"
    in
-   let fmt = read_word header in
+   let fmt = read_word header_s in
    if fmt != 1 then
       failwith "unsupported MIDI format";
-   let tracks = read_word header in
-   let division = read_word header in
+   let tracks = read_word header_s in
+   let division = read_word header_s in
    let file = new Midifile.file division in
    for i = 1 to tracks do
-      let track = get_chunk "MTrk" channel in
-      import_track file track
+      let track_s = get_chunk "MTrk" channel in
+      import_track file track_s
    done;
    file;;
 
