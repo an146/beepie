@@ -2,8 +2,11 @@ let _ = GtkMain.Main.init ();;
 
 let window = GWindow.window ~border_width: 0 ();;
 let vbox = GPack.vbox ~packing: window#add ();;
+let packing = vbox#pack ~from: `END;;
+let statusbar = GMisc.statusbar ~packing ();;
+let error_status_ctx = statusbar#new_context "Errors"
 let files =
-   let packing = vbox#pack ~expand: true ~from: `END in
+   let packing = packing ~expand: true in
    GPack.notebook ~tab_pos:`TOP ~packing ();;
 
 let add_file (f : MidiFile.file) =
@@ -21,9 +24,10 @@ let add_file (f : MidiFile.file) =
 module Menu = Menu.Make(struct
    let window = window
    let add_file = add_file
+   let error_status_ctx = error_status_ctx
 end)
 
-let menu = new Menu.menu (vbox#pack ~from: `END);;
+let menu = new Menu.menu packing;;
 let refresh_devices = menu#refresh_devices;;
 
 let init () =
