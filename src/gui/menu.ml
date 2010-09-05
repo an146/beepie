@@ -17,6 +17,9 @@ module Make (MainWindow : MainWindow_sig) = struct
       let open_file fn = MainWindow.add_file (Import.import fn) in
       List.iter open_file filenames
 
+   let test_sound () =
+      MidiIo.output_note 0 60 1.0
+
    class menu packing =
       object (self)
          val menubar = GMenu.menu_bar ~packing ()
@@ -53,6 +56,7 @@ module Make (MainWindow : MainWindow_sig) = struct
          initializer
             let factory = new GMenu.factory menubar in
             let accel_group = factory#accel_group in
+
             let show_message s =
                let last_message = ref None in
                begin match !last_message with
@@ -61,30 +65,36 @@ module Make (MainWindow : MainWindow_sig) = struct
                end;
                last_message := Some (MainWindow.error_status_ctx#push s);
             in
+
             let wrap_errors f () =
                try f () with
                    Failure desc -> show_message ("Error: " ^ desc)
                  | _ -> show_message "Unhandled exception occurred"
             in
 
-            (* top-level *)
-            let m_file = factory#add_submenu "File" in
-            let m_settings = factory#add_submenu "Settings" in
+            let add_item (factory : GMenu.menu GMenu.factory) callback =
+               factory#add_item ~callback: (wrap_errors callback)
+            in
 
             (* File *)
-            let factory = new GMenu.factory m_file ~accel_group in
-            let _ = factory#add_item "New" ~key:_N ~callback: new_file in
-            let _ = factory#add_item "Open..." ~key:_O ~callback: (wrap_errors open_files) in
-            let _ = factory#add_item "Quit" ~key:_Q ~callback: Main.quit in
+            let _ =
+               let m_file = factory#add_submenu "File" in
+               let factory = new GMenu.factory m_file ~accel_group in
+               let add_item = add_item factory in
+               let _ = add_item new_file   "New"     ~key:_N in
+               let _ = add_item open_files "Open..." ~key:_O in
+               let _ = add_item Main.quit  "Quit"    ~key:_Q in ()
+            in
 
             (* Settings *)
-            let factory = new GMenu.factory m_settings ~accel_group in
-            m_output_device <- Some (factory#add_submenu "Output device");
-            let callback = self#refresh_devices in
-            let _ = factory#add_item "Refresh devices" ~callback in
-            let callback = fun () -> MidiIo.output_note 0 60 1.0 in
-            let _ = factory#add_item "Test sound" ~callback in
-            ()
+            let _ =
+               let m_settings = factory#add_submenu "Settings" in
+               let factory = new GMenu.factory m_settings ~accel_group in
+               let add_item = add_item factory in
+               m_output_device <- Some (factory#add_submenu "Output device");
+               let _ = add_item self#refresh_devices "Refresh devices" in
+               let _ = add_item test_sound "Test sound" in ()
+            in ()
       end
 end
 
