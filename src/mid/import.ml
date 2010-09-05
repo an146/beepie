@@ -11,13 +11,16 @@ let read_word = read_int 2;;
 let bigendian_to_int str =
    read_int (String.length str) (Stream.of_string str);;
 
-let import_track file track_s =
+let import_track file track_s track_s_offset =
    let track = file#add_track () in
    ignore track;
-   let process_cmd = function
-      cmd -> ignore cmd
+   let process_cmd (dtime, event) =
+      match event with
+          MidiCmd.NoteOff (c, n, v) -> Printf.printf "off%i %i %i\n" c n v
+        | MidiCmd.NoteOn  (c, n, v) -> Printf.printf "on%i %i %i\n" c n v
+        | _ -> ()
    in
-   Stream.iter process_cmd (MidiCmd.parse_stream track_s)
+   Stream.iter process_cmd (MidiCmd.parse_stream track_s track_s_offset)
 
 let read_chunk_header channel =
    let magic = String.create 4 in
@@ -31,10 +34,11 @@ exception Unexpected_Magic
 
 let rec get_chunk ?(really_expect = false) expected_magic channel =
    let magic, length = read_chunk_header channel in
+   let chunk_offset = pos_in channel in
    if magic = expected_magic then
       let chunk = String.create length in
       really_input channel chunk 0 length;
-      Stream.of_string chunk
+      (Stream.of_string chunk, chunk_offset)
    else begin (* magic != expected_magic *)
       if really_expect then
          raise Unexpected_Magic;
@@ -46,7 +50,7 @@ let rec get_chunk ?(really_expect = false) expected_magic channel =
 let really_get_chunk = get_chunk ~really_expect: true
 
 let do_import channel =
-   let header_s =
+   let header_s, _ =
       try really_get_chunk "MThd" channel
       with Unexpected_Magic -> failwith "not a MIDI file"
    in
@@ -57,8 +61,8 @@ let do_import channel =
    let division = read_word header_s in
    let file = new MidiFile.file division in
    for i = 1 to tracks do
-      let track_s = get_chunk "MTrk" channel in
-      import_track file track_s
+      let track_s, track_s_offset = get_chunk "MTrk" channel in
+      import_track file track_s track_s_offset
    done;
    file;;
 
