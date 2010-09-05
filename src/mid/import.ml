@@ -55,7 +55,7 @@ let do_import channel =
       failwith "unsupported MIDI format";
    let tracks = read_word header_s in
    let division = read_word header_s in
-   let file = new Midifile.file division in
+   let file = new MidiFile.file division in
    for i = 1 to tracks do
       let track_s = get_chunk "MTrk" channel in
       import_track file track_s

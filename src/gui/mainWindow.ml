@@ -6,7 +6,7 @@ let files =
    let packing = vbox#pack ~expand: true ~from: `END in
    GPack.notebook ~tab_pos:`TOP ~packing ();;
 
-let add_file (f : Midifile.file) =
+let add_file (f : MidiFile.file) =
    let text = "Append Frame" in
    let label = GMisc.label ~text:"Page" () in
    let border_width = 10 in

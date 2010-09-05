@@ -2,8 +2,8 @@ FILES[] =
    import
    export
    midiCmd
-   midifile
-   midiio
+   midiFile
+   midiIo
 
 StaticCLibrary(bindings, io_$(BINDINGS))
 OCamlLibrary(libmid, $(FILES))

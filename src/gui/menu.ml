@@ -4,12 +4,12 @@ open GMain
 module type MainWindow_sig =
    sig
       val window : GWindow.window
-      val add_file : Midifile.file -> unit
+      val add_file : MidiFile.file -> unit
    end
 
 module Make (MainWindow : MainWindow_sig) = struct
    let new_file () =
-      MainWindow.add_file (new Midifile.file 240)
+      MainWindow.add_file (new MidiFile.file 240)
 
    let open_files () =
       let filenames = FileDialog.get_open_filenames (MainWindow.window) in
@@ -30,14 +30,14 @@ module Make (MainWindow : MainWindow_sig) = struct
             List.iter (fun c -> c#destroy ()) menu#all_children;
 
             let factory = new GMenu.factory menu in
-            let devices = Midiio.enum_output_devices () in
+            let devices = MidiIo.enum_output_devices () in
             let have_active = ref false in
             let create_item device group =
-               let id = device.Midiio.id in
-               let name = device.Midiio.name in
-               let callback = fun set -> if set then Midiio.set_output_device id in
+               let id = device.MidiIo.id in
+               let name = device.MidiIo.name in
+               let callback = fun set -> if set then MidiIo.set_output_device id in
                let label = id ^ "    " ^ name in
-               let active = (Midiio.get_output_device () = id) in
+               let active = (MidiIo.get_output_device () = id) in
                if active then have_active := true;
                factory#add_radio_item label ~active ~callback ~group
             in
@@ -46,7 +46,7 @@ module Make (MainWindow : MainWindow_sig) = struct
             let _ = List.map create_item (List.tl devices) in
             if not !have_active then begin
                first#set_active true;
-               Midiio.set_output_device (List.hd devices).Midiio.id
+               MidiIo.set_output_device (List.hd devices).MidiIo.id
             end
 
          initializer
@@ -68,7 +68,7 @@ module Make (MainWindow : MainWindow_sig) = struct
             m_output_device <- Some (factory#add_submenu "Output device");
             let callback = self#refresh_devices in
             let _ = factory#add_item "Refresh devices" ~callback in
-            let callback = fun () -> Midiio.output_note 0 60 1.0 in
+            let callback = fun () -> MidiIo.output_note 0 60 1.0 in
             let _ = factory#add_item "Test sound" ~callback in
             ()
       end

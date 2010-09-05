@@ -1,6 +1,6 @@
 let main () =
-   Midiio.init ();
-   Midiio.set_program 0 0;
+   MidiIo.init ();
+   MidiIo.set_program 0 0;
 
    MainWindow.init ();
    MainWindow.refresh_devices ();
@@ -9,7 +9,7 @@ let main () =
    window#show ();
 
    GMain.Main.main ();
-   Midiio.fini ();;
+   MidiIo.fini ();;
 
 let _ = main ();;
 
