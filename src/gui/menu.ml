@@ -67,6 +67,7 @@ module Make (MainWindow : MainWindow_sig) = struct
             in
 
             let wrap_errors f () =
+               show_message "";
                try f () with
                    Failure desc -> show_message ("Error: " ^ desc)
                  | _ -> show_message "Unhandled exception occurred"
