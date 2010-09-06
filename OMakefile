@@ -2,6 +2,7 @@ SRC_DIRS[] =
    gui
    mid
    tests
+   util
 
 vmount(-l, src, _build)
 foreach (d, $(SRC_DIRS))
@@ -15,6 +16,10 @@ foreach (d, $(SRC_DIRS))
 .PHONY: test-gui
 test-gui: gui
    ./_build/gui/gui
+
+.PHONY: test
+test: tester
+   ./_build/tests/tester
 
 .DEFAULT: gui
 #.DEFAULT: test-gui

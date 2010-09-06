@@ -12,4 +12,4 @@ OCAMLFLAGS += -thread
 BINDINGS = alsa
 BINDINGS_LINK_FLAGS = -cclib -lasound
 
-.SUBDIRS: mid gui tests
+.SUBDIRS: mid gui tests util
