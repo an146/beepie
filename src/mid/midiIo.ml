@@ -27,7 +27,7 @@ let output_a a = output (compose_string a)
 let output_note channel pitch length =
    output_a [| 0x90 + channel; pitch; 64 |];
    flush_output ();
-   ignore (Unix.select [] [] [] length);
+   ignore (Thread.select [] [] [] length);
    output_a [| 0x80 + channel; pitch; 64 |];
    flush_output ();;
 

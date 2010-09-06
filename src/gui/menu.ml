@@ -17,8 +17,15 @@ module Make (MainWindow : MainWindow_sig) = struct
       let open_file fn = MainWindow.add_file (Import.import fn) in
       List.iter open_file filenames
 
+   let do_test_sound () =
+      MidiIo.output_note 0 60 1.0;
+      Printf.printf "bla\n";
+      flush stdout
+
    let test_sound () =
-      MidiIo.output_note 0 60 1.0
+      let _ = Thread.create do_test_sound () in
+      Printf.printf "xyi\n";
+      flush stdout
 
    class menu packing =
       object (self)
