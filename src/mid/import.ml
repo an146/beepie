@@ -11,7 +11,7 @@ let read_word = read_int 2;;
 let bigendian_to_int str =
    read_int (String.length str) (Stream.of_string str);;
 
-let import_track file track_s track_s_offset =
+let import_cmd_stream file stream =
    let track = file#add_track () in
    ignore track;
    let process_cmd (dtime, event) =
@@ -20,7 +20,10 @@ let import_track file track_s track_s_offset =
         | MidiCmd.NoteOn  (c, n, v) -> Printf.printf "on%i %i %i\n" c n v
         | _ -> ()
    in
-   Stream.iter process_cmd (MidiCmd.parse_stream track_s track_s_offset)
+   Stream.iter process_cmd stream;;
+
+let import_track file track_s track_s_offset =
+   import_cmd_stream file (MidiCmd.parse_stream track_s track_s_offset);;
 
 let read_chunk_header channel =
    let magic = String.create 4 in
@@ -65,6 +68,13 @@ let do_import channel =
       import_track file track_s track_s_offset
    done;
    file;;
+
+let import_inline ?(division = 240) tracks =
+   let file = new MidiFile.file division in
+   let import_inline_track track =
+      import_cmd_stream file (Stream.of_list track)
+   in
+   List.iter import_inline_track tracks;;
 
 let import filename =
    let channel = open_in_bin filename in
