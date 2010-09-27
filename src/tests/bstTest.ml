@@ -19,8 +19,8 @@ let test_balance () =
    assert_equal 14 (Bst.height input_tree);;
 
 let tests =
-	"bst" >::: [
-      "balance" >:: test_balance
-	];;
+   "bst" >::: [
+      "add-ints" >:: test_add_ints
+   ];;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
