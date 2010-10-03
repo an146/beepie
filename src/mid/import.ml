@@ -11,6 +11,10 @@ let read_word = read_int 2;;
 let bigendian_to_int str =
    read_int (String.length str) (Stream.of_string str);;
 
+let default_velocity on_vel =
+   ignore on_vel;
+   64;;
+
 let import_cmd_stream file stream =
    let track = file#add_track () in
    ignore track;
@@ -74,7 +78,8 @@ let import_inline ?(division = 240) tracks =
    let import_inline_track track =
       import_cmd_stream file (Stream.of_list track)
    in
-   List.iter import_inline_track tracks;;
+   List.iter import_inline_track tracks;
+   file;;
 
 let import filename =
    let channel = open_in_bin filename in

@@ -3,10 +3,11 @@ OCAMLPACKS[] =
 
 FILES[] =
    bstTest
+   importTest
    tester
 
-OCAMLINCLUDES += ../util
-OCAML_LIBS += ../util/libutil
+OCAMLINCLUDES += ../mid ../util
+OCAML_LIBS += ../mid/libmid ../util/libutil
 
 .PHONY: tester
 tester: $(OCamlProgram tester, $(FILES))

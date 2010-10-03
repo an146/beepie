@@ -5,6 +5,7 @@ type controller_value = int
 type pitchwheel_value = int
 type metaevent_type = controller_type
 type channel = int
+type miditime = int
 
 type event =
    (* Voice *)
