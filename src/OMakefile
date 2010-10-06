@@ -1,5 +1,8 @@
 USE_OCAMLFIND = true
 
+OCAMLPACKS[] +=
+   base
+
 if $(not $(OCAMLFIND_EXISTS))
    eprintln(This project requires ocamlfind, but is was not found.)
    eprintln(You need to install ocamlfind and run "omake --configure".)
@@ -11,5 +14,8 @@ OCAMLFLAGS += -thread
 
 BINDINGS = alsa
 BINDINGS_LINK_FLAGS = -cclib -lasound
+
+OCAMLINCLUDES += ../util
+OCAML_LIBS += ../util/libutil
 
 .SUBDIRS: mid gui tests util

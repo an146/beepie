@@ -1,3 +1,5 @@
+open Base
+
 let read_int n stream =
    let ret = ref 0 in
    for i = 1 to n do
@@ -14,20 +16,6 @@ let bigendian_to_int str =
 let default_velocity on_vel =
    ignore on_vel;
    64;;
-
-let import_cmd_stream file stream =
-   let track = file#add_track () in
-   ignore track;
-   let process_cmd (dtime, event) =
-      match event with
-          MidiCmd.NoteOff (c, n, v) -> Printf.printf "off%i %i %i\n" c n v
-        | MidiCmd.NoteOn  (c, n, v) -> Printf.printf "on%i %i %i\n" c n v
-        | _ -> ()
-   in
-   Stream.iter process_cmd stream;;
-
-let import_track file track_s track_s_offset =
-   import_cmd_stream file (MidiCmd.parse_stream track_s track_s_offset);;
 
 let read_chunk_header channel =
    let magic = String.create 4 in
@@ -56,7 +44,15 @@ let rec get_chunk ?(really_expect = false) expected_magic channel =
 
 let really_get_chunk = get_chunk ~really_expect: true
 
-let do_import channel =
+let do_import file nTracks get_track =
+   let queue = PriorityQueue.make MidiCmd.stream_order in
+   for i = 1 to nTracks do
+      ignore (file#add_track ());
+      PriorityQueue.add queue (get_track ())
+   done;
+   file;;
+
+let import_io_channel channel =
    let header_s, _ =
       try really_get_chunk "MThd" channel
       with Unexpected_Magic -> failwith "not a MIDI file"
@@ -67,24 +63,26 @@ let do_import channel =
    let tracks = read_word header_s in
    let division = read_word header_s in
    let file = new MidiFile.file division in
-   for i = 1 to tracks do
+   let get_track () =
       let track_s, track_s_offset = get_chunk "MTrk" channel in
-      import_track file track_s track_s_offset
-   done;
-   file;;
+      MidiCmd.parse_stream track_s track_s_offset
+   in
+   do_import file tracks get_track;;
 
 let import_inline ?(division = 240) tracks =
    let file = new MidiFile.file division in
-   let import_inline_track track =
-      import_cmd_stream file (Stream.of_list track)
+   let tracks = ref tracks in
+   let get_track () =
+      let track = Stream.of_list (List.hd !tracks) in
+      tracks := List.tl !tracks;
+      track
    in
-   List.iter import_inline_track tracks;
-   file;;
+   do_import file (List.length !tracks) get_track;;
 
 let import filename =
    let channel = open_in_bin filename in
    let file =
-      try do_import channel
+      try import_io_channel channel
       with e ->
          close_in channel;
          match e with

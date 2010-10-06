@@ -102,19 +102,35 @@ let parse_event stream s_offset running_status =
       failwith "sysex events unsupported at the moment";;
 
 let read_event stream s_offset running_status =
-   let time = read_varlen stream in
+   let dtime = read_varlen stream in
    let event, new_rs = parse_event stream s_offset running_status in
-   (time, event, new_rs);;
+   (dtime, event, new_rs);;
 
 let parse_stream stream s_offset =
    let running_status = ref (-1) in
+   let time = ref 0 in
+   let get_time delta =
+      time := !time + delta;
+      !time
+   in
    let converter _ =
       if Stream.peek stream = None then
          None
       else
          match read_event stream s_offset !running_status with
-            time, ev, new_rs -> running_status := new_rs; Some (time, ev)
+            dtime, ev, new_rs ->
+               running_status := new_rs; Some (get_time dtime, ev)
    in
-   Stream.from converter
+   Stream.from converter;;
+
+let stream_order s1 s2 =
+   let a = Stream.peek s1 in
+   let b = Stream.peek s2 in
+   match a with
+     None -> false
+   | Some (t1, _) ->
+        (match b with
+          None -> true
+        | Some (t2, _) -> t1 < t2);;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

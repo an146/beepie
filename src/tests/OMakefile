@@ -1,4 +1,4 @@
-OCAMLPACKS[] =
+OCAMLPACKS[] +=
    oUnit
 
 FILES[] =
