@@ -4,10 +4,14 @@ let window = GWindow.window ~border_width: 0 ();;
 let vbox = GPack.vbox ~packing: window#add ();;
 let packing = vbox#pack ~from: `END;;
 let statusbar = GMisc.statusbar ~packing ();;
-let error_status_ctx = statusbar#new_context "Errors"
+let status_ctx = statusbar#new_context "Status";;
 let files =
    let packing = packing ~expand: true in
    GPack.notebook ~tab_pos:`TOP ~packing ();;
+
+let set_status s =
+   status_ctx#pop ();
+   ignore (status_ctx#push s);;
 
 let add_file (f : MidiFile.file) =
    let text = "Append Frame" in
@@ -24,7 +28,7 @@ let add_file (f : MidiFile.file) =
 module Menu = Menu.Make(struct
    let window = window
    let add_file = add_file
-   let error_status_ctx = error_status_ctx
+   let set_status = set_status
 end)
 
 let menu = new Menu.menu packing;;

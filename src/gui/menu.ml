@@ -5,7 +5,7 @@ module type MainWindow_sig =
    sig
       val window : GWindow.window
       val add_file : MidiFile.file -> unit
-      val error_status_ctx : GMisc.statusbar_context
+      val set_status : string -> unit
    end
 
 module Make (MainWindow : MainWindow_sig) = struct
@@ -64,20 +64,11 @@ module Make (MainWindow : MainWindow_sig) = struct
             let factory = new GMenu.factory menubar in
             let accel_group = factory#accel_group in
 
-            let show_message s =
-               let last_message = ref None in
-               begin match !last_message with
-                   None -> ()
-                 | Some m -> MainWindow.error_status_ctx#remove m
-               end;
-               last_message := Some (MainWindow.error_status_ctx#push s);
-            in
-
             let wrap_errors f () =
-               show_message "";
+               MainWindow.set_status "";
                try f () with
-                   Failure desc -> show_message ("Error: " ^ desc)
-                 | _ -> show_message "Unhandled exception occurred"
+                   Failure desc -> MainWindow.set_status ("Error: " ^ desc)
+                 | _ -> MainWindow.set_status "Unhandled exception occurred"
             in
 
             let add_item (factory : GMenu.menu GMenu.factory) callback =
