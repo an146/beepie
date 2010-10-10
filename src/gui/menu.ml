@@ -9,13 +9,22 @@ module type MainWindow_sig =
    end
 
 module Make (MainWindow : MainWindow_sig) = struct
+   let profile f =
+      let start_time = Unix.time () in
+      f ();
+      let time = Unix.time () -. start_time in
+      if time >= 0.1 then
+         MainWindow.set_status (Printf.sprintf "Done (%.3f s)" time)
+      else
+         MainWindow.set_status "Done";;
+
    let new_file () =
       MainWindow.add_file (new MidiFile.file 240)
 
    let open_files () =
       let filenames = FileDialog.get_open_filenames (MainWindow.window) in
       let open_file fn = MainWindow.add_file (Import.import fn) in
-      List.iter open_file filenames
+      profile (fun () -> List.iter open_file filenames)
 
    let do_test_sound () =
       MidiIo.output_note 0 60 1.0;
