@@ -16,20 +16,14 @@ module Note =
 
 module NoteSet = Set.Make(Note)
 
-class track =
-   object (self)
-      val mutable name_ = ""
-      val mutable notes_ = NoteSet.empty
-
-      method name = name_
-      method notes = notes_
-   end
+type track = { name : string; notes : NoteSet.t }
+let empty_track = { name = ""; notes = NoteSet.empty };;
 
 class file (_division : int) =
    object (self)
       val division_ = _division
       val mutable filename_ = ""
-      val mutable tracks_ : track list = []
+      val mutable tracks_ : track array = [| |]
 
       method division = division_
       method filename = filename_
@@ -37,11 +31,17 @@ class file (_division : int) =
       method export fn =
          Export.export self fn;
          self#set_filename fn
-      method add_track () =
-         let ret = new track in
-         tracks_ <- tracks_ @ [ret];
-         ret
+      method add_track () = tracks_ <- Array.append tracks_ [| empty_track |]
       method tracks = tracks_
+      method track i = tracks_.(i)
+      method insert_note t c n (on_time, on_vel) (off_time, off_vel) =
+         let note = (c, n, (on_time, on_vel), (off_time, off_vel)) in
+         let old_track = self#track t in
+         let new_track = {
+            name = old_track.name;
+            notes = NoteSet.add note old_track.notes
+         } in
+         tracks_.(t) <- new_track
    end;;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

@@ -45,12 +45,45 @@ let rec get_chunk ?(really_expect = false) expected_magic channel =
 let really_get_chunk = get_chunk ~really_expect: true
 
 let do_import file nTracks get_track =
-   let queue = PriorityQueue.make MidiCmd.stream_order in
-   for i = 1 to nTracks do
-      ignore (file#add_track ());
-      PriorityQueue.add queue (get_track ())
+   let track_streams = Array.init nTracks (fun _ -> get_track ()) in
+   let order a b = MidiCmd.stream_order track_streams.(a) track_streams.(b) in
+   let queue = PriorityQueue.make order in
+   for i = 0 to nTracks - 1 do
+      file#add_track ();
+      PriorityQueue.add queue i
    done;
-   file;;
+   let get_event _ =
+      try
+         let track_id = PriorityQueue.first queue in
+         let time, ev = Stream.next track_streams.(track_id) in
+         PriorityQueue.reorder_down queue track_id;
+         Some (track_id, time, ev)
+      with Stream.Failure -> None
+   in
+   let notes = Array.init 16 (fun i -> ignore i; Array.make 128 None) in
+   let off c n off_time off_vel =
+      match notes.(c).(n) with
+      | None -> ()
+      | Some (track, on_time, on_vel) ->
+            let off_vel =
+               if off_vel >= 0 then
+                  off_vel
+               else
+                  default_velocity on_vel
+            in
+            file#insert_note track c n (on_time, on_vel) (off_time, off_vel);
+            notes.(c).(n) <- None
+   in
+   let handle_event (track, time, ev) =
+      match ev with
+      | MidiCmd.NoteOn (c, n, v) ->
+            off c n time (-1);
+            notes.(c).(n) <- Some (track, time, v)
+      | MidiCmd.NoteOff (c, n, v) ->
+            off c n time v
+      | _ -> ()
+   in
+   Stream.iter handle_event (Stream.from get_event);;
 
 let import_io_channel channel =
    let header_s, _ =
@@ -67,7 +100,8 @@ let import_io_channel channel =
       let track_s, track_s_offset = get_chunk "MTrk" channel in
       MidiCmd.parse_stream track_s track_s_offset
    in
-   do_import file tracks get_track;;
+   do_import file tracks get_track;
+   file;;
 
 let import_inline ?(division = 240) tracks =
    let file = new MidiFile.file division in
@@ -77,7 +111,8 @@ let import_inline ?(division = 240) tracks =
       tracks := List.tl !tracks;
       track
    in
-   do_import file (List.length !tracks) get_track;;
+   do_import file (List.length !tracks) get_track;
+   file;;
 
 let import filename =
    let channel = open_in_bin filename in
