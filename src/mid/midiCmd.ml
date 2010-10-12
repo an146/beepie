@@ -1,10 +1,12 @@
-type midipitch = int
-type velocity = int
-type controller_type = int
-type controller_value = int
-type pitchwheel_value = int
+open IntX
+
+type midipitch = int7
+type velocity = int7
+type controller_type = int7
+type controller_value = int7
+type pitchwheel_value = int14
 type metaevent_type = controller_type
-type channel = int
+type channel = int4
 type miditime = int
 
 type event =
@@ -21,6 +23,14 @@ type event =
    | EndOfTrack
    | TrackName of string
    | UnknownMetaEvent of metaevent_type * string
+
+let off c a b        = NoteOff         (int4_of_int c, int7_of_int a, int7_of_int b)
+let on c a b         = NoteOn          (int4_of_int c, int7_of_int a, int7_of_int b)
+let aftertouch c a b = NoteAftertouch  (int4_of_int c, int7_of_int a, int7_of_int b)
+let ctrl c a b       = Controller      (int4_of_int c, int7_of_int a, int7_of_int b)
+let program c a      = Program         (int4_of_int c, int7_of_int a)
+let chpressure c a   = ChannelPressure (int4_of_int c, int7_of_int a)
+let pitchwheel c a   = PitchWheel      (int4_of_int c, int14_of_int a)
 
 let peek_byte stream =
    match Stream.peek stream with
@@ -41,6 +51,14 @@ let read_data_byte stream s_offset =
       failwith ("unexpected command byte " ^ (byte_info stream s_offset));
    Stream.junk stream;
    b;;
+
+let read_int7 stream s_offset =
+   int7_of_int (read_data_byte stream s_offset);;
+
+let read_int14 stream s_offset =
+   let b1 = read_data_byte stream s_offset in
+   let b2 = read_data_byte stream (s_offset + 1) in
+   int14_of_int (b1 * 128 + b2);;
 
 let read_bytes n stream =
    let ret = String.create n in
@@ -63,23 +81,24 @@ let rec read_varlen stream =
 
 let parse_voice_event status stream s_offset =
    let code = status land 0xF0 in
-   let ch = status land 0xF in
-   let byte () = read_data_byte stream s_offset in
+   let ch = int4_of_int (status land 0xF) in
+   let int7 () = read_int7 stream s_offset in
+   let int14 () = read_int14 stream s_offset in
    match code with
-       0x80 -> NoteOff         (ch, byte (), byte ())
-     | 0x90 -> NoteOn          (ch, byte (), byte ())
-     | 0xA0 -> NoteAftertouch  (ch, byte (), byte ())
-     | 0xB0 -> Controller      (ch, byte (), byte ())
-     | 0xC0 -> Program         (ch, byte ())
-     | 0xD0 -> ChannelPressure (ch, byte ())
-     | 0xE0 -> PitchWheel      (ch, byte () * byte ())
+       0x80 -> NoteOff         (ch, int7 (), int7 ())
+     | 0x90 -> NoteOn          (ch, int7 (), int7 ())
+     | 0xA0 -> NoteAftertouch  (ch, int7 (), int7 ())
+     | 0xB0 -> Controller      (ch, int7 (), int7 ())
+     | 0xC0 -> Program         (ch, int7 ())
+     | 0xD0 -> ChannelPressure (ch, int7 ())
+     | 0xE0 -> PitchWheel      (ch, int14 ())
      | _    -> assert false;;
 
 let parse_meta_event stream s_offset =
-   let mtype = read_data_byte stream s_offset in
+   let mtype = read_int7 stream s_offset in
    let len = read_varlen stream in
    let data = read_bytes len stream in
-   match mtype with
+   match int_of_int7 mtype with
        0x2F -> EndOfTrack
      | _ -> UnknownMetaEvent (mtype, data);;
 

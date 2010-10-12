@@ -1,4 +1,5 @@
 open Base
+open IntX
 
 let read_int n stream =
    let ret = ref 0 in
@@ -62,6 +63,7 @@ let do_import file nTracks get_track =
    in
    let notes = Array.init 16 (fun i -> ignore i; Array.make 128 None) in
    let off c n off_time off_vel =
+      let n7 = int7_of_int n in
       match notes.(c).(n) with
       | None -> ()
       | Some (track, on_time, on_vel) ->
@@ -71,15 +73,17 @@ let do_import file nTracks get_track =
                else
                   default_velocity on_vel
             in
-            file#insert_note track c n (on_time, on_vel) (off_time, off_vel);
+            let e1 = (on_time, int7_of_int on_vel) in
+            let e2 = (off_time, int7_of_int off_vel) in
+            file#insert_note track (int4_of_int c) n7 e1 e2;
             notes.(c).(n) <- None
    in
    let handle_event (track, time, ev) =
       match ev with
-      | MidiCmd.NoteOn (c, n, v) ->
+      | MidiCmd.NoteOn (Int4 c, Int7 n, Int7 v) ->
             off c n time (-1);
             notes.(c).(n) <- Some (track, time, v)
-      | MidiCmd.NoteOff (c, n, v) ->
+      | MidiCmd.NoteOff (Int4 c, Int7 n, Int7 v) ->
             off c n time v
       | _ -> ()
    in

@@ -1,9 +1,11 @@
+open IntX
 open MidiCmd
 
 type note_end = miditime * velocity
 type note = channel * midipitch * note_end * note_end
 
-let note_compare (_, p1, (beg1, _), (end1, _)) (_, p2, (beg2, _), (end2, _)) =
+let note_compare (_, Int7 p1, (beg1, _), (end1, _))
+                 (_, Int7 p2, (beg2, _), (end2, _)) =
    if beg1 != beg2 then compare beg1 beg2
    else if end1 != end2 then compare end1 end2
    else compare p1 p2;;

@@ -1,7 +1,6 @@
 open OUnit
 
 let suites = "" >::: [
-   BstTest.tests;
    ImportTest.tests
 ];;
 
