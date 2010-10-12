@@ -34,8 +34,8 @@ let pitchwheel c a   = PitchWheel      (int4_of_int c, int14_of_int a)
 
 let peek_byte stream =
    match Stream.peek stream with
-       Some c -> int_of_char c
-     | None -> assert false;;
+   | Some c -> int_of_char c
+   | None   -> failwith "peek_byte";;
 
 let read_byte stream =
    int_of_char (Stream.next stream);;
