@@ -148,11 +148,9 @@ let parse_stream stream s_offset =
 let stream_order s1 s2 =
    let a = Stream.peek s1 in
    let b = Stream.peek s2 in
-   match a with
-     None -> false
-   | Some (t1, _) ->
-        (match b with
-          None -> true
-        | Some (t2, _) -> t1 < t2);;
+   match a, b with
+   | None, _ -> false
+   | _, None -> true
+   | Some (t1, _), Some (t2, _) -> t1 < t2;;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
