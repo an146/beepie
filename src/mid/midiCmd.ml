@@ -83,8 +83,8 @@ let parse_voice_event status stream s_offset =
    let int14 () = read_int14 stream s_offset in
    let voice1 cmd = cmd ch (byte ()) in
    let voice2 cmd =
-      let arg1 = byte() in
-      let arg2 = byte() in
+      let arg1 = byte () in
+      let arg2 = byte () in
       cmd ch arg1 arg2
    in
    match code with
