@@ -1,5 +1,6 @@
 open IntX
 open MidiCmd
+open MidiTypes
 
 type note_end = miditime * velocity
 type note = channel * midipitch * note_end * note_end

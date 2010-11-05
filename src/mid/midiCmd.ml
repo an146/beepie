@@ -1,4 +1,5 @@
 open IntX
+open MidiTypes
 
 type midipitch = int7
 type velocity = int7
@@ -7,7 +8,6 @@ type controller_value = int7
 type pitchwheel_value = int14
 type metaevent_type = controller_type
 type channel = int4
-type miditime = int
 
 type event =
    (* Voice *)
