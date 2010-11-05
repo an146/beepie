@@ -2,6 +2,7 @@ OCAMLPACKS[] +=
    oUnit
 
 FILES[] =
+   ctrlMapTest
    importTest
    tester
 

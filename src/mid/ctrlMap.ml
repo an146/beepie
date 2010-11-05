@@ -1,5 +1,7 @@
 open MidiTypes
 
+exception Out_of_range
+
 module IntMap = Map.Make (struct
    type t = miditime
    let compare = compare
@@ -20,6 +22,25 @@ let create ?(min = 0) ?(max = 127) default =
       max = max;
       default = default;
       map = x
+   };;
+
+let get time ctrlmap =
+   (* TODO: avoid using IntMap.split;
+    * write own Map impl with lower_bound *)
+   let less, _, _ = IntMap.split (time + 1) ctrlmap.map in
+   try
+      let _, v = IntMap.max_binding less in
+      v
+   with Not_found -> ctrlmap.default;;
+
+let set time value ctrlmap =
+   if value < ctrlmap.min || value > ctrlmap.max then
+      raise Out_of_range;
+   {
+      min = ctrlmap.min;
+      max = ctrlmap.max;
+      default = ctrlmap.default;
+      map = IntMap.add time value ctrlmap.map
    };;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
