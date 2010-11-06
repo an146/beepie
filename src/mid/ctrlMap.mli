@@ -3,7 +3,8 @@ type t
 exception Out_of_range
 
 val create : ?min:int -> ?max:int -> int -> t
-val get : int -> t -> int
-val set : int -> int -> t -> t
+val get : MidiTypes.miditime -> t -> int
+val set : MidiTypes.miditime -> int -> t -> t
+val bindings : t -> (MidiTypes.miditime * int) list
 
 (* vim: set ts=3 sw=3 tw=80 : *)

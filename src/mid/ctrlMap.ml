@@ -14,14 +14,12 @@ type t = {
    map : int IntMap.t
 };;
 
-let x = IntMap.empty;;
-
 let create ?(min = 0) ?(max = 127) default =
    {
       min = min;
       max = max;
       default = default;
-      map = x
+      map = IntMap.empty
    };;
 
 let get time ctrlmap =
@@ -42,5 +40,7 @@ let set time value ctrlmap =
       default = ctrlmap.default;
       map = IntMap.add time value ctrlmap.map
    };;
+
+let bindings ctrlmap = IntMap.bindings ctrlmap.map;;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

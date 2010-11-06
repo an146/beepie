@@ -2,6 +2,8 @@ open IntX
 open MidiCmd
 open MidiTypes
 
+exception Out_of_range
+
 type note_end = miditime * velocity
 type note = channel * midipitch * note_end * note_end
 
@@ -19,16 +21,50 @@ module Note =
 
 module NoteSet = Set.Make(Note)
 
+let x = CtrlMap.create 0;;
+
 type track = { name : string; notes : NoteSet.t }
 let empty_track = { name = ""; notes = NoteSet.empty };;
 
+class channel (_id : int option) =
+   object (self)
+      val mutable program_ = Ctrl.create_map Ctrl.Program
+      val mutable pitchwheel_ = Ctrl.create_map Ctrl.PitchWheel
+
+      val controllers_ =
+         let create_controller i = Ctrl.create_map (Ctrl.Controller i) in
+         Array.init 128 create_controller
+
+      method id = _id
+      method ctrl ctrltype =
+         match ctrltype with
+         | Ctrl.Program -> program_
+         | Ctrl.PitchWheel -> pitchwheel_
+         | Ctrl.Controller i -> controllers_.(i)
+
+      method set_ctrl ctrltype ctrl =
+         match ctrltype with
+         | Ctrl.Program -> program_ <- ctrl
+         | Ctrl.PitchWheel -> pitchwheel_ <- ctrl
+         | Ctrl.Controller i -> controllers_.(i) <- ctrl
+
+      initializer
+         let check_id id =
+            if id < 0 || id >= 16 then
+               raise Out_of_range
+         in
+         Option.may check_id _id
+   end;;
+
 class file (_division : int) =
    object (self)
-      val division_ = _division
       val mutable filename_ = ""
       val mutable tracks_ : track array = [| |]
+      val mutable channels_ =
+         let create_channel i = new channel (Some i) in
+         Array.init 16 create_channel
 
-      method division = division_
+      method division = _division
       method filename = filename_
       method set_filename _filename = filename_ <- _filename
       method export fn =
@@ -37,6 +73,8 @@ class file (_division : int) =
       method add_track () = tracks_ <- Array.append tracks_ [| empty_track |]
       method tracks = tracks_
       method track i = tracks_.(i)
+      method channel i = channels_.(i)
+
       method insert_note t c n (on_time, on_vel) (off_time, off_vel) =
          let note = (c, n, (on_time, on_vel), (off_time, off_vel)) in
          let old_track = self#track t in

@@ -2,6 +2,7 @@ USE_OCAMLFIND = true
 
 OCAMLPACKS[] +=
    base
+   extlib
 
 if $(not $(OCAMLFIND_EXISTS))
    eprintln(This project requires ocamlfind, but is was not found.)

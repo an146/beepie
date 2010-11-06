@@ -40,9 +40,33 @@ let test_simple_notes () =
    let imported_notes = List.map get_track_notes (Array.to_list file#tracks) in
    assert_equal ~printer:notes_printer notes imported_notes;;
 
+let test_ctrls () =
+   let file =
+      Import.import_inline [
+         [
+            0,   pitchwheel 0 0x1000;
+            0,   pitchwheel 0 0x2000;
+            0,   ctrl 0 7 10;
+            100, pitchwheel 0 0x2001;
+            200, ctrl 0 7 20;
+            200, pitchwheel 0 0x2002
+         ];
+         [
+         ]
+      ]
+   in
+   let test ctrltype values =
+      let channel = file#channel 0 in
+      let ctrl = channel#ctrl ctrltype in
+      assert_equal (CtrlMap.bindings ctrl) values
+   in
+   test Ctrl.pitchwheel [100, 0x2001; 200, 0x2002];
+   test Ctrl.volume [0, 10; 200, 20];;
+
 let tests =
    "import" >::: [
-      "simple-notes" >:: test_simple_notes
+      "simple-notes" >:: test_simple_notes;
+      "ctrls" >:: test_ctrls
    ];;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

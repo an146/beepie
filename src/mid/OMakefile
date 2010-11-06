@@ -1,10 +1,12 @@
 FILES[] =
+   ctrl
    ctrlMap
    import
    export
    midiCmd
    midiFile
    midiIo
+   midiTypes
 
 StaticCLibrary(bindings, io_$(BINDINGS))
 OCamlLibrary(libmid, $(FILES))
