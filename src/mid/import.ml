@@ -78,6 +78,12 @@ let do_import file nTracks get_track =
             file#insert_note track (int4_of_int c) n7 e1 e2;
             notes.(c).(n) <- None
    in
+   let ctrl c t time v =
+      let channel = file#channel c in
+      let map = channel#ctrl t in
+      let map = CtrlMap.set time v map in
+      channel#set_ctrl t map
+   in
    let handle_event (track, time, ev) =
       match ev with
       | MidiCmd.NoteOn (Int4 c, Int7 n, Int7 v) ->
@@ -85,6 +91,12 @@ let do_import file nTracks get_track =
             notes.(c).(n) <- Some (track, time, v)
       | MidiCmd.NoteOff (Int4 c, Int7 n, Int7 v) ->
             off c n time v
+      | MidiCmd.Controller (Int4 c, Int7 t, Int7 v) ->
+            ctrl c (Ctrl.Controller t) time v
+      | MidiCmd.Program (Int4 c, Int7 v) ->
+            ctrl c Ctrl.Program time v
+      | MidiCmd.PitchWheel (Int4 c, Int14 v) ->
+            ctrl c Ctrl.PitchWheel time v
       | _ -> ()
    in
    Stream.iter handle_event (Stream.from get_event);;

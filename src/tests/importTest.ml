@@ -48,6 +48,7 @@ let test_ctrls () =
             0,   pitchwheel 0 0x2000;
             0,   ctrl 0 7 10;
             100, pitchwheel 0 0x2001;
+            150, pitchwheel 0 0x2001;
             200, ctrl 0 7 20;
             200, pitchwheel 0 0x2002
          ];
@@ -58,7 +59,15 @@ let test_ctrls () =
    let test ctrltype values =
       let channel = file#channel 0 in
       let ctrl = channel#ctrl ctrltype in
-      assert_equal (CtrlMap.bindings ctrl) values
+      let printer values =
+         match values with
+         | [] -> ""
+         | hd :: tl ->
+               let print (t, v) = string_of_int t ^ ", " ^ string_of_int v in
+               let concat v1 v2 = v1 ^ "; " ^ (print v2) in
+               List.fold_left concat (print hd) tl
+      in
+      assert_equal ~printer (CtrlMap.bindings ctrl) values
    in
    test Ctrl.pitchwheel [100, 0x2001; 200, 0x2002];
    test Ctrl.volume [0, 10; 200, 20];;

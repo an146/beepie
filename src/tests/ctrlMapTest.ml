@@ -17,10 +17,26 @@ let test_set () =
    assert_equal (CtrlMap.get 100 m) 14;
    assert_equal (CtrlMap.get 101 m) 14;;
 
+let test_unset () =
+   let m = CtrlMap.create 13 in
+   let m' = m in
+   let m' = CtrlMap.set 100 14 m' in
+   let m' = CtrlMap.set 100 13 m' in
+   assert_equal m m';;
+
+let test_move_left () =
+   let m = CtrlMap.create 13 in
+   let m = CtrlMap.set 100 14 m in
+   let m = CtrlMap.set 99 14 m in
+   let m = CtrlMap.set 98 14 m in
+   assert_equal (CtrlMap.bindings m) [98, 14];;
+
 let tests =
    "ctrlMap" >::: [
       "empty" >:: test_empty;
-      "set" >:: test_set
+      "set" >:: test_set;
+      "unset" >:: test_unset;
+      "move-left" >:: test_move_left;
    ];;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
