@@ -37,13 +37,13 @@ class channel (_id : int option) =
 
       method id = _id
       method ctrl ctrltype =
-         match ctrltype with
+         match Ctrl.check_supported ctrltype with
          | Ctrl.Program -> program_
          | Ctrl.PitchWheel -> pitchwheel_
          | Ctrl.Controller i -> controllers_.(i)
 
       method set_ctrl ctrltype ctrl =
-         match ctrltype with
+         match Ctrl.check_supported ctrltype with
          | Ctrl.Program -> program_ <- ctrl
          | Ctrl.PitchWheel -> pitchwheel_ <- ctrl
          | Ctrl.Controller i -> controllers_.(i) <- ctrl

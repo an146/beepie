@@ -79,10 +79,11 @@ let do_import file nTracks get_track =
             notes.(c).(n) <- None
    in
    let ctrl c t time v =
-      let channel = file#channel c in
-      let map = channel#ctrl t in
-      let map = CtrlMap.set time v map in
-      channel#set_ctrl t map
+      if Ctrl.is_supported t then
+         let channel = file#channel c in
+         let map = channel#ctrl t in
+         let map = CtrlMap.set time v map in
+         channel#set_ctrl t map
    in
    let handle_event (track, time, ev) =
       match ev with
