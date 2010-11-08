@@ -23,7 +23,7 @@ module Make (MainWindow : MainWindow_sig) = struct
 
    let open_files () =
       let filenames = FileDialog.get_open_filenames (MainWindow.window) in
-      let open_file fn = MainWindow.add_file (Import.import fn) in
+      let open_file fn = MainWindow.add_file (Import.import_file fn) in
       profile (fun () -> List.iter open_file filenames)
 
    let do_test_sound () =

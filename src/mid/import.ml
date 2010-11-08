@@ -129,7 +129,7 @@ let import_inline ?(division = 240) tracks =
    do_import file tracks;
    file;;
 
-let import filename =
+let import_file filename =
    let channel = open_in_bin filename in
    let file =
       try import_io_channel channel
