@@ -6,7 +6,6 @@ FILES[] =
    midiCmd
    midiFile
    midiIo
-   midiTypes
 
 StaticCLibrary(bindings, io_$(BINDINGS))
 OCamlLibrary(libmid, $(FILES))
