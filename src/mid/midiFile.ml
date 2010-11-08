@@ -21,8 +21,6 @@ module Note =
 
 module NoteSet = Set.Make(Note)
 
-let x = CtrlMap.create 0;;
-
 type track = { name : string; notes : NoteSet.t }
 let empty_track = { name = ""; notes = NoteSet.empty };;
 
