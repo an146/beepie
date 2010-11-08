@@ -45,22 +45,23 @@ let rec get_chunk ?(really_expect = false) expected_magic channel =
 
 let really_get_chunk = get_chunk ~really_expect: true
 
-let do_import file nTracks get_track =
-   let track_streams = Array.init nTracks (fun _ -> get_track ()) in
-   let order a b = MidiCmd.stream_order track_streams.(a) track_streams.(b) in
+let interleave_streams streams order =
+   let order a b = order streams.(a) streams.(b) in
    let queue = PriorityQueue.make order in
-   for i = 0 to nTracks - 1 do
-      file#add_track ();
+   for i = 0 to (Array.length streams) - 1 do
       PriorityQueue.add queue i
    done;
-   let get_event _ =
+   let get_element _ =
       try
-         let track_id = PriorityQueue.first queue in
-         let time, ev = Stream.next track_streams.(track_id) in
-         PriorityQueue.reorder_down queue track_id;
-         Some (track_id, time, ev)
+         let nStream = PriorityQueue.first queue in
+         let elt = Stream.next streams.(nStream) in
+         PriorityQueue.reorder_down queue nStream;
+         Some (nStream, elt)
       with Stream.Failure -> None
    in
+   Stream.from get_element;;
+
+let do_import file track_streams =
    let notes = Array.init 16 (fun i -> ignore i; Array.make 128 None) in
    let off c n off_time off_vel =
       let n7 = int7_of_int n in
@@ -85,7 +86,7 @@ let do_import file nTracks get_track =
          let map = CtrlMap.set time v map in
          channel#set_ctrl t map
    in
-   let handle_event (track, time, ev) =
+   let handle_event (track, (time, ev)) =
       match ev with
       | MidiCmd.NoteOn (Int4 c, Int7 n, Int7 v) ->
             off c n time (-1);
@@ -100,7 +101,8 @@ let do_import file nTracks get_track =
             ctrl c Ctrl.PitchWheel time v
       | _ -> ()
    in
-   Stream.iter handle_event (Stream.from get_event);;
+   let order = MidiCmd.stream_order in
+   Stream.iter handle_event (interleave_streams track_streams order);;
 
 let import_io_channel channel =
    let header_s, _ =
@@ -110,25 +112,21 @@ let import_io_channel channel =
    let fmt = read_word header_s in
    if fmt != 1 then
       failwith "unsupported MIDI format";
-   let tracks = read_word header_s in
+   let tracks_count = read_word header_s in
    let division = read_word header_s in
-   let file = new MidiFile.file division in
-   let get_track () =
+   let file = new MidiFile.file ~tracks_count division in
+   let get_track i =
       let track_s, track_s_offset = get_chunk "MTrk" channel in
       MidiCmd.parse_stream track_s track_s_offset
    in
-   do_import file tracks get_track;
+   do_import file (Array.init tracks_count get_track);
    file;;
 
 let import_inline ?(division = 240) tracks =
-   let file = new MidiFile.file division in
-   let tracks = ref tracks in
-   let get_track () =
-      let track = Stream.of_list (List.hd !tracks) in
-      tracks := List.tl !tracks;
-      track
-   in
-   do_import file (List.length !tracks) get_track;
+   let tracks_count = List.length tracks in
+   let file = new MidiFile.file ~tracks_count division in
+   let tracks = Array.map Stream.of_list (Array.of_list tracks) in
+   do_import file tracks;
    file;;
 
 let import filename =

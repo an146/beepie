@@ -9,7 +9,7 @@ type pitchwheel_value = int14
 type metaevent_type = controller_type
 type channel = int4
 
-type event =
+type t =
    (* Voice *)
      NoteOff         of channel * midipitch * velocity
    | NoteOn          of channel * midipitch * velocity

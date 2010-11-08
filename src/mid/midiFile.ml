@@ -56,10 +56,10 @@ class channel (_id : int option) =
          Option.may check_id _id
    end;;
 
-class file (_division : int) =
+class file ?(tracks_count = 0) (_division : int) =
    object (self)
       val mutable filename_ = ""
-      val mutable tracks_ : track array = [| |]
+      val mutable tracks_ = Array.create tracks_count empty_track
       val mutable channels_ =
          let create_channel i = new channel (Some i) in
          Array.init 16 create_channel
