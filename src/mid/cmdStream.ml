@@ -1,6 +1,9 @@
 open IntX
 open MidiAsm
 open MidiCmd
+open MidiTypes
+
+type t = (miditime * MidiCmd.t) Stream.t
 
 let peek_byte stream =
    match Stream.peek stream with
