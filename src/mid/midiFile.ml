@@ -28,18 +28,18 @@ class channel (_id : int option) =
    object (self)
       val mutable ctrls_ =
          let create_map c () = Ctrl.create_map c in
-         PMap.mapi create_map Ctrl.all_supported
+         BatPMap.mapi create_map Ctrl.all_supported
 
       method id = _id
-      method ctrl ctrltype = PMap.find ctrltype ctrls_
-      method set_ctrl ctrltype ctrl = ctrls_ <- PMap.add ctrltype ctrl ctrls_
+      method ctrl ctrltype = BatPMap.find ctrltype ctrls_
+      method set_ctrl ctrltype ctrl = ctrls_ <- BatPMap.add ctrltype ctrl ctrls_
 
       initializer
          let check_id id =
             if id < 0 || id >= 16 then
                raise Out_of_range
          in
-         Option.may check_id _id
+         BatOption.may check_id _id
    end;;
 
 class file ?(tracks_count = 0) (_division : int) =

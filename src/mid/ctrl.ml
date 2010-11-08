@@ -62,13 +62,13 @@ let check_supported ctrltype =
       raise Unsupported
 
 let all_supported =
-   let m = ref PMap.empty in
-   m := PMap.add Program () !m;
-   m := PMap.add PitchWheel () !m;
+   let m = ref BatPMap.empty in
+   m := BatPMap.add Program () !m;
+   m := BatPMap.add PitchWheel () !m;
    for i = 0 to 127 do
       let ctrl = Controller i in
       if is_supported ctrl then
-         m := PMap.add ctrl () !m
+         m := BatPMap.add ctrl () !m
    done;
    !m;;
 
