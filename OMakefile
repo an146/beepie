@@ -21,7 +21,7 @@ test-gui: gui
 test: tester
    ./_build/tests/tester
 
-.DEFAULT: gui
+.DEFAULT: gui test
 #.DEFAULT: test-gui
 
 .PHONY: clean
