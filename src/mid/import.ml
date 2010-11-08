@@ -101,7 +101,7 @@ let do_import file track_streams =
             ctrl c Ctrl.PitchWheel time v
       | _ -> ()
    in
-   let order = MidiCmd.stream_order in
+   let order = CmdStream.stream_order in
    Stream.iter handle_event (interleave_streams track_streams order);;
 
 let import_io_channel channel =
@@ -117,7 +117,7 @@ let import_io_channel channel =
    let file = new MidiFile.file ~tracks_count division in
    let get_track i =
       let track_s, track_s_offset = get_chunk "MTrk" channel in
-      MidiCmd.parse_stream track_s track_s_offset
+      CmdStream.parse_stream track_s track_s_offset
    in
    do_import file (Array.init tracks_count get_track);
    file;;

@@ -1,36 +1,6 @@
 open IntX
-open MidiTypes
-
-type midipitch = int7
-type velocity = int7
-type controller_type = int7
-type controller_value = int7
-type pitchwheel_value = int14
-type metaevent_type = controller_type
-type channel = int4
-
-type t =
-   (* Voice *)
-     NoteOff         of channel * midipitch * velocity
-   | NoteOn          of channel * midipitch * velocity
-   | NoteAftertouch  of channel * midipitch * velocity
-   | Controller      of channel * controller_type * controller_value
-   | Program         of channel * controller_value
-   | ChannelPressure of channel * velocity
-   | PitchWheel      of channel * pitchwheel_value
-
-   (* Meta *)
-   | EndOfTrack
-   | TrackName of string
-   | UnknownMetaEvent of metaevent_type * string
-
-let off c a b        = NoteOff         (int4_of_int c, int7_of_int a, int7_of_int b)
-let on c a b         = NoteOn          (int4_of_int c, int7_of_int a, int7_of_int b)
-let aftertouch c a b = NoteAftertouch  (int4_of_int c, int7_of_int a, int7_of_int b)
-let ctrl c a b       = Controller      (int4_of_int c, int7_of_int a, int7_of_int b)
-let program c a      = Program         (int4_of_int c, int7_of_int a)
-let chpressure c a   = ChannelPressure (int4_of_int c, int7_of_int a)
-let pitchwheel c a   = PitchWheel      (int4_of_int c, int14_of_int a)
+open MidiAsm
+open MidiCmd
 
 let peek_byte stream =
    match Stream.peek stream with

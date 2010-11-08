@@ -1,5 +1,5 @@
 open IntX
-open MidiCmd
+open MidiAsm
 open MidiFile
 open OUnit
 

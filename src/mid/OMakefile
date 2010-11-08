@@ -1,9 +1,10 @@
 FILES[] =
+   cmdStream
    ctrl
    ctrlMap
    import
    export
-   midiCmd
+   midiAsm
    midiFile
    midiIo
 
