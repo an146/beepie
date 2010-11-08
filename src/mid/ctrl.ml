@@ -61,5 +61,16 @@ let check_supported ctrltype =
    else
       raise Unsupported
 
+let all_supported =
+   let m = ref PMap.empty in
+   m := PMap.add Program () !m;
+   m := PMap.add PitchWheel () !m;
+   for i = 0 to 127 do
+      let ctrl = Controller i in
+      if is_supported ctrl then
+         m := PMap.add ctrl () !m
+   done;
+   !m;;
+
 (* vim: set ts=3 sw=3 tw=80 : *)
 

@@ -28,25 +28,13 @@ let empty_track = { name = ""; notes = NoteSet.empty };;
 
 class channel (_id : int option) =
    object (self)
-      val mutable program_ = Ctrl.create_map Ctrl.Program
-      val mutable pitchwheel_ = Ctrl.create_map Ctrl.PitchWheel
-
-      val controllers_ =
-         let create_controller i = Ctrl.create_map (Ctrl.Controller i) in
-         Array.init 128 create_controller
+      val mutable ctrls_ =
+         let create_map c () = Ctrl.create_map c in
+         PMap.mapi create_map Ctrl.all_supported
 
       method id = _id
-      method ctrl ctrltype =
-         match Ctrl.check_supported ctrltype with
-         | Ctrl.Program -> program_
-         | Ctrl.PitchWheel -> pitchwheel_
-         | Ctrl.Controller i -> controllers_.(i)
-
-      method set_ctrl ctrltype ctrl =
-         match Ctrl.check_supported ctrltype with
-         | Ctrl.Program -> program_ <- ctrl
-         | Ctrl.PitchWheel -> pitchwheel_ <- ctrl
-         | Ctrl.Controller i -> controllers_.(i) <- ctrl
+      method ctrl ctrltype = PMap.find ctrltype ctrls_
+      method set_ctrl ctrltype ctrl = ctrls_ <- PMap.add ctrltype ctrl ctrls_
 
       initializer
          let check_id id =
@@ -67,9 +55,6 @@ class file ?(tracks_count = 0) (_division : int) =
       method division = _division
       method filename = filename_
       method set_filename _filename = filename_ <- _filename
-      method export fn =
-         Export.export self fn;
-         self#set_filename fn
       method add_track () = tracks_ <- Array.append tracks_ [| empty_track |]
       method tracks = tracks_
       method track i = tracks_.(i)
