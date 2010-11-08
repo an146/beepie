@@ -53,7 +53,7 @@ class file ?(tracks_count = 0) (_division : int) =
       method division = _division
       method filename = filename_
       method set_filename _filename = filename_ <- _filename
-      method add_track () = tracks_ <- Array.append tracks_ [| empty_track |]
+      method add_track = tracks_ <- Array.append tracks_ [| empty_track |]
       method tracks = tracks_
       method track i = tracks_.(i)
       method channel i = channels_.(i)
