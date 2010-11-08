@@ -17,3 +17,5 @@ let get_save_filename parent =
    match choose_files `SAVE parent with
      [] -> raise DialogCancelled
    | l -> List.hd l;;
+
+(* vim: set ts=3 sw=3 tw=80 : *)

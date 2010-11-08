@@ -12,4 +12,5 @@ module Make(T : OrderedType) = struct
    let add element tree = element :: tree
    let height tree = List.length tree
 end
-   
+
+(* vim: set ts=3 sw=3 tw=80 : *)
