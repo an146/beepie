@@ -125,7 +125,7 @@ let import_io_channel channel =
 let import_inline ?(division = 240) tracks =
    let tracks_count = List.length tracks in
    let file = new MidiFile.file ~tracks_count division in
-   let tracks = Array.map Stream.of_list (Array.of_list tracks) in
+   let tracks = Array.of_list (List.map Stream.of_list tracks) in
    do_import file tracks;
    file;;
 
