@@ -1,3 +1,4 @@
+open BatPervasives
 open IntX
 open MidiAsm
 open MidiFile

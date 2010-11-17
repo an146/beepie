@@ -8,6 +8,9 @@ open build/LaTeX
 #
 DefineCommandVars()
 
+BYTE_ENABLED = 1
+NATIVE_ENABLED = 1
+
 #
 # Include the OMakefile in this directory.
 #

@@ -1,3 +1,4 @@
+open BatPervasives
 open IntX
 open MidiCmd
 open MidiTypes
@@ -24,15 +25,27 @@ module NoteSet = Set.Make(Note)
 type track = { name : string; notes : NoteSet.t }
 let empty_track = { name = ""; notes = NoteSet.empty };;
 
+let check_ctrltype t =
+   if not (Ctrl.is_supported t) then
+      let name = Ctrl.name t in
+      invalid_arg ("Unsupported controller: " ^ name);;
+
 class channel (_id : int option) =
    object (self)
       val mutable ctrls_ =
-         let create_map c () = Ctrl.create_map c in
-         BatPMap.mapi create_map Ctrl.all_supported
+         let e = Ctrl.all_supported () /@ fun c -> c, Ctrl.create_map c in
+         BatPMap.of_enum e
 
       method id = _id
-      method ctrl ctrltype = BatPMap.find ctrltype ctrls_
+      method ctrl ctrltype =
+         check_ctrltype ctrltype;
+         try BatPMap.find ctrltype ctrls_
+         with Not_found ->
+            let n = BatEnum.count self#enum_ctrls in
+            invalid_arg ((string_of_int n) ^ (Ctrl.name ctrltype))
+
       method set_ctrl ctrltype ctrl = ctrls_ <- BatPMap.add ctrltype ctrl ctrls_
+      method enum_ctrls = (BatPMap.enum ctrls_)
 
       initializer
          let check_id id =
@@ -57,6 +70,8 @@ class file ?(tracks_count = 0) (_division : int) =
       method tracks = tracks_
       method track i = tracks_.(i)
       method channel i = channels_.(i)
+      method enum_channels =
+         (BatArray.range channels_) /@ (fun i -> i, self#channel i)
 
       method insert_note t c n (on_time, on_vel) (off_time, off_vel) =
          let note = (c, n, (on_time, on_vel), (off_time, off_vel)) in

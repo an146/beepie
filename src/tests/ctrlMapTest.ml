@@ -22,7 +22,7 @@ let test_unset () =
    let m' = m in
    let m' = CtrlMap.set 100 14 m' in
    let m' = CtrlMap.set 100 13 m' in
-   assert_equal m m';;
+   assert_equal (CtrlMap.bindings m) (CtrlMap.bindings m');;
 
 let test_move_left () =
    let m = CtrlMap.create 13 in

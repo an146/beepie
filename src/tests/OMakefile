@@ -1,13 +1,16 @@
 OCAMLPACKS[] +=
+   batteries
    oUnit
 
-FILES[] =
+TESTS[] =
    ctrlMapTest
    importTest
-   tester
+   suites
 
 OCAMLINCLUDES += ../mid
 OCAML_LIBS += ../mid/libmid
 
-.PHONY: tester
-tester: $(OCamlProgram tester, $(FILES))
+.PHONY: tester tester-debug
+tester: $(OCamlProgram tester, $(TESTS) tester)
+
+tester-debug : $(OCamlProgram tester-debug, $(TESTS) testerDebug)

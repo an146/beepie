@@ -1,3 +1,5 @@
+open BatPervasives
+
 type t =
   | Program
   | PitchWheel
@@ -28,6 +30,11 @@ let omni_mode_off = Controller 124
 let omni_mode_on = Controller 125
 let monophonic_mode = Controller 126
 let polyphonic_mode = Controller 127
+
+let name = function
+   | Program -> "program"
+   | PitchWheel -> "pitchwheel"
+   | Controller n -> "controller" ^ (string_of_int n);;
 
 let create_map ctrltype =
    let min = 0 in
@@ -61,16 +68,11 @@ let check_supported ctrltype =
    else
       raise Unsupported
 
-let all_supported =
-   let m = ref BatPMap.empty in
-   m := BatPMap.add Program () !m;
-   m := BatPMap.add PitchWheel () !m;
-   for i = 0 to 127 do
-      let ctrl = Controller i in
-      if is_supported ctrl then
-         m := BatPMap.add ctrl () !m
-   done;
-   !m;;
+let all_supported () =
+   let controllers =
+      (0 -- 127) /@ (fun i -> Controller i) // is_supported
+   in
+   BatEnum.append controllers (BatList.enum [Program; PitchWheel]);;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
 
