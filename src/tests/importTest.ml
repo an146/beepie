@@ -15,10 +15,12 @@ let test_simple_notes () =
             0,   on  0 0 64 ; (* 1 terminated by on *)
             100, on  0 0 127; (* 2 terminated by zero-velocity on *)
             200, on  0 0 0  ;
-            200, on  1 2 32   (* 3 terminated in another track *)
+            200, on  1 2 32 ; (* 3 terminated in another track *)
+            200, on  1 3 100; (* 4 the same on time as 3 *)
+            400, off 1 3 100;
          ];
          [
-            300, off 1 2 65
+            300, off 1 2 65;
          ]
       ]
    in
@@ -31,7 +33,8 @@ let test_simple_notes () =
          [
             note 0 0 (0, 64) (100, Import.default_velocity 64);
             note 0 0 (100, 127) (200, Import.default_velocity 127);
-            note 1 2 (200, 32) (300, 65)
+            note 1 2 (200, 32) (300, 65);
+            note 1 3 (200, 100) (400, 100);
          ];
          [
          ]
@@ -51,7 +54,7 @@ let test_ctrls () =
             100, pitchwheel 0 0x2001;
             150, pitchwheel 0 0x2001;
             200, ctrl 0 7 20;
-            200, pitchwheel 0 0x2002
+            200, pitchwheel 0 0x2002;
          ];
          [
          ]
