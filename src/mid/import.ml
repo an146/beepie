@@ -1,70 +1,124 @@
-open Base
-open IntX
+open IO
+open BigEndian
+open MidiAsm
+open MidiCmd
 
-let read_int n stream =
-   let ret = ref 0 in
-   for i = 1 to n do
-      let b = int_of_char (Stream.next stream) in
-      ret := !ret * 256 + b
-   done;
-   !ret;;
+type chunk = {
+   magic  : string;
+   input  : input;
+   offset : unit -> int;
+}
 
-let read_word = read_int 2;;
+let rec read_midi_byte is_cmd chunk =
+   let offset = chunk.offset () in
+   let b = read_byte chunk.input in
+   if is_cmd != (b >= 0x80) then (
+      failwith (Printf.sprintf "unexpected byte type at 0x%X" offset)
+   );
+   b
+and read_cmd_byte  = fun c -> read_midi_byte true  c
+and read_data_byte = fun c -> read_midi_byte false c
 
-let bigendian_to_int str =
-   read_int (String.length str) (Stream.of_string str);;
+(* TODO: check for overflow *)
+let rec parse_varlen input =
+   let b = read_byte input in
+   let v = b land 0x7F in
+   if b < 0x80 then
+      v
+   else begin
+      let ret = v * 0x80 + (parse_varlen input) in
+      assert (ret >= 0);
+      ret
+   end
+
+let parse_track_chunk chunk =
+   let running_status = ref (-1) in
+   let time = ref 0 in
+   let get_time delta =
+      time := !time + delta;
+      !time
+   in
+   let get_event () =
+      try
+         let dtime = parse_varlen chunk.input in
+         let first = read_byte chunk.input in
+         let status, event =
+            if first < 0xF0 then
+               let status, args =
+                  if first >= 0x80 then
+                     first, ref [| |]
+                  else if !running_status >= 0x80 then
+                     !running_status, ref [| first |]
+                  else
+                     failwith "no running status";
+               in
+               let code    = status land 0xf0 in
+               let channel = status land 0x0F in
+               let voice1 f c args = f c args.(0) in
+               let voice2 f c args = f c args.(0) args.(1) in
+               let nargs, cmd =
+                  match code with
+                  | 0x80 -> 2, voice2 off
+                  | 0x90 -> 2, voice2 on
+                  | 0xA0 -> 2, voice2 aftertouch
+                  | 0xB0 -> 1, voice2 ctrl
+                  | 0xC0 -> 1, voice1 program
+                  | 0xD0 -> 1, voice1 chpressure
+                  | 0xE0 -> 2, voice2 pitchwheel2
+                  | _    -> assert false
+               in
+               while Array.length !args < nargs do
+                  args := Array.append !args [| read_data_byte chunk |]
+               done;
+               status, cmd channel !args
+            else if first = 0xFF then
+               let mtype = read_data_byte chunk in
+               let len = parse_varlen chunk.input in
+               let data = really_nread chunk.input len in
+               let event =
+                  match mtype with
+                  | 0x2F -> EndOfTrack
+                  | _    -> UnknownMetaEvent (mtype, data)
+               in
+               -1, event
+            else
+               failwith "sysex events unsupported at the moment"
+         in
+         running_status := status;
+         Some (get_time dtime, event)
+      with No_more_input -> None
+   in
+   Enum.from_while get_event
 
 let default_velocity on_vel =
    ignore on_vel;
-   64;;
+   64
 
-let read_chunk_header channel =
-   let magic = String.create 4 in
-   let length = String.create 4 in
-   really_input channel magic 0 4;
-   really_input channel length 0 4;
-   (magic, bigendian_to_int length);;
-
-(* в рот мне ноги! *)
-exception Unexpected_Magic
-
-let rec get_chunk ?(really_expect = false) expected_magic channel =
-   let magic, length = read_chunk_header channel in
-   let chunk_offset = pos_in channel in
-   if magic = expected_magic then
-      let chunk = String.create length in
-      really_input channel chunk 0 length;
-      (Stream.of_string chunk, chunk_offset)
-   else begin (* magic != expected_magic *)
-      if really_expect then
-         raise Unexpected_Magic;
-      let new_pos = (pos_in channel) + length in
-      seek_in channel new_pos;
-      get_chunk expected_magic channel
-   end;;
-
-let really_get_chunk = get_chunk ~really_expect: true
-
-let interleave_streams streams order =
-   let order a b = order streams.(a) streams.(b) in
-   let queue = PriorityQueue.make order in
-   for i = 0 to (Array.length streams) - 1 do
-      PriorityQueue.add queue i
-   done;
-   let get_element _ =
-      try
-         let nStream = PriorityQueue.first queue in
-         let elt = Stream.next streams.(nStream) in
-         PriorityQueue.reorder_down queue nStream;
-         Some (nStream, elt)
-      with Stream.Failure -> None
+let parse_chunks (input, inoffset) =
+   let read_ui32 input =
+      let n = read_i32 input in
+      if n < 0 then failwith "overflow";
+      n
    in
-   Stream.from get_element;;
+   let get_chunk () =
+      try
+         let magic = really_nread input 4 in
+         let length = read_ui32 input in
+         let start_offset = inoffset () in
+         let content = really_nread input length in
+         let cinput, coffset = pos_in (input_string content) in
+         Some {
+            magic = magic;
+            input = cinput;
+            offset = fun () -> start_offset + coffset ();
+         }
+      with No_more_input -> None
+   in
+   Enum.from_while get_chunk
 
-let do_import file track_streams =
+let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
    let notes = Array.init 16 (fun i -> ignore i; Array.make 128 None) in
    let off c n off_time off_vel =
-      let n7 = int7_of_int n in
       match notes.(c).(n) with
       | None -> ()
       | Some (track, on_time, on_vel) ->
@@ -74,9 +128,9 @@ let do_import file track_streams =
                else
                   default_velocity on_vel
             in
-            let e1 = (on_time, int7_of_int on_vel) in
-            let e2 = (off_time, int7_of_int off_vel) in
-            file#insert_note track (int4_of_int c) n7 e1 e2;
+            let e1 = (on_time, on_vel) in
+            let e2 = (off_time, off_vel) in
+            file#insert_note track c n e1 e2;
             notes.(c).(n) <- None
    in
    let ctrl c t time v =
@@ -88,59 +142,57 @@ let do_import file track_streams =
    in
    let handle_event (track, (time, ev)) =
       match ev with
-      | MidiCmd.NoteOn (Int4 c, Int7 n, Int7 v) ->
+      | Voice (c, NoteOn (n, v)) ->
             off c n time (-1);
             notes.(c).(n) <- Some (track, time, v)
-      | MidiCmd.NoteOff (Int4 c, Int7 n, Int7 v) ->
+      | Voice (c, NoteOff (n, v)) ->
             off c n time v
-      | MidiCmd.Controller (Int4 c, Int7 t, Int7 v) ->
+      | Voice (c, Controller (t, v)) ->
             ctrl c (Ctrl.Controller t) time v
-      | MidiCmd.Program (Int4 c, Int7 v) ->
+      | Voice (c, Program v) ->
             ctrl c Ctrl.Program time v
-      | MidiCmd.PitchWheel (Int4 c, Int14 v) ->
+      | Voice (c, PitchWheel v) ->
             ctrl c Ctrl.PitchWheel time v
       | _ -> ()
    in
-   let order = CmdStream.stream_order in
-   Stream.iter handle_event (interleave_streams track_streams order);;
+   Enum.iter handle_event (MiscUtils.enum_merge2 tracks)
 
-let import_io_channel channel =
-   let header_s, _ =
-      try really_get_chunk "MThd" channel
-      with Unexpected_Magic -> failwith "not a MIDI file"
+let import_input input =
+   let chunks = parse_chunks (pos_in input) in
+   let header =
+      match Enum.get chunks with
+      | Some h when h.magic = "MThd" -> h
+      | _ -> failwith "not a MIDI file"
    in
-   let fmt = read_word header_s in
+   let fmt = read_ui16 header.input in
    if fmt != 1 then
       failwith "unsupported MIDI format";
-   let tracks_count = read_word header_s in
-   let division = read_word header_s in
+   let tracks_count = read_ui16 header.input in
+   let division = read_ui16 header.input in
    let file = new MidiFile.file ~tracks_count division in
-   let get_track i =
-      let track_s, track_s_offset = get_chunk "MTrk" channel in
-      CmdStream.parse_stream track_s track_s_offset
-   in
-   do_import file (Array.init tracks_count get_track);
-   file;;
+   let tracks = chunks // (fun c -> c.magic = "MTrk") /@ parse_track_chunk in
+   do_import file tracks;
+   file
 
 let import_inline ?(division = 240) tracks =
    let tracks_count = List.length tracks in
    let file = new MidiFile.file ~tracks_count division in
-   let tracks = Array.of_list (List.map Stream.of_list tracks) in
+   let tracks = List.enum tracks /@ List.enum in
    do_import file tracks;
-   file;;
+   file
 
 let import_file filename =
    let channel = open_in_bin filename in
    let file =
-      try import_io_channel channel
+      try import_input channel
       with e ->
          close_in channel;
          match e with
-           End_of_file -> failwith "unexpected end of file"
+         | End_of_file -> failwith "unexpected end of file"
          | e -> raise e
    in
    close_in channel;
    file#set_filename filename;
-   file;;
+   file
 
 (* vim: set ts=3 sw=3 tw=80 : *)

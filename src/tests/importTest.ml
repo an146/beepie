@@ -1,5 +1,3 @@
-open BatPervasives
-open IntX
 open MidiAsm
 open MidiFile
 open OUnit
@@ -24,10 +22,6 @@ let test_simple_notes () =
          ]
       ]
    in
-   let note_end (time, vel) = (time, int7_of_int vel) in
-   let note c p on off =
-      int4_of_int c, int7_of_int p, note_end on, note_end off
-   in
    let notes =
       [
          [
@@ -40,9 +34,9 @@ let test_simple_notes () =
          ]
       ]
    in
-   let get_track_notes t = NoteSet.elements t.notes in
-   let imported_notes = List.map get_track_notes (Array.to_list file#tracks) in
-   assert_equal ~printer:notes_printer notes imported_notes;;
+   let get_track_notes t = PSet.enum t.notes |> List.of_enum in
+   let imp_notes = Array.enum file#tracks /@ get_track_notes |> List.of_enum in
+   assert_equal ~printer:notes_printer notes imp_notes;;
 
 let test_ctrls () =
    let file =

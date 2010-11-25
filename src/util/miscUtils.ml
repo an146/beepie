@@ -8,20 +8,22 @@ let priorityqueue_of_array arr order =
    q;;
 
 let enum_merge2 ?(order = compare) e =
-   let arr = BatArray.of_enum e in
+   let arr = Array.of_enum e in
    let pq_order a b =
-      match BatEnum.peek arr.(a), BatEnum.peek arr.(b) with
+      match Enum.peek arr.(a), Enum.peek arr.(b) with
       | None, _ -> false
       | _, None -> true
       | Some x, Some y -> order x y < 0
    in
    let queue = priorityqueue_of_array arr pq_order in
-   let get_element _ =
+   let get_element () =
       let idx = PriorityQueue.first queue in
-      let elt = BatEnum.get arr.(idx) in
+      let oelt = Enum.get arr.(idx) in
       PriorityQueue.reorder_down queue idx;
-      elt
+      match oelt with
+      | None -> None
+      | Some elt -> Some (idx, elt)
    in
-   BatEnum.from_while get_element;;
+   Enum.from_while get_element;;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

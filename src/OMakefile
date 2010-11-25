@@ -1,17 +1,18 @@
 USE_OCAMLFIND = true
 
-OCAMLPACKS[] +=
-   base
-   batteries
-
 if $(not $(OCAMLFIND_EXISTS))
    eprintln(This project requires ocamlfind, but is was not found.)
    eprintln(You need to install ocamlfind and run "omake --configure".)
    exit 1
 
-# fix for Arch Linux
+OCAMLPACKS[] +=
+   base
+   batteries
+   batteries.pa_batteries.syntax
+
 CFLAGS += -I $(shell ocamlc -where)
-OCAMLFLAGS += -thread
+OCAMLFLAGS += -thread -syntax camlp4o
+OCAMLDEPFLAGS += -syntax camlp4o
 
 BINDINGS = alsa
 BINDINGS_LINK_FLAGS = -cclib -lasound

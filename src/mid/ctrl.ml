@@ -1,5 +1,3 @@
-open BatPervasives
-
 type t =
   | Program
   | PitchWheel
@@ -72,7 +70,7 @@ let all_supported () =
    let controllers =
       (0 -- 127) /@ (fun i -> Controller i) // is_supported
    in
-   BatEnum.append controllers (BatList.enum [Program; PitchWheel]);;
+   Enum.append controllers (List.enum [Program; PitchWheel]);;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
 

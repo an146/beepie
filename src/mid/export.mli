@@ -1,7 +1,6 @@
 open MidiFile
-open MidiTypes
 
-val export_stream : file -> (miditime * int * MidiCmd.t) Stream.t
+val export_stream : file -> (int * int * MidiCmd.t) Enum.t
 
 val export_file : file -> string -> unit
 

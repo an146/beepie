@@ -1,29 +1,23 @@
-open BatPervasives
-open IntX
 open MidiCmd
-open MidiTypes
 
 exception Out_of_range
 
-type note_end = miditime * velocity
-type note = channel * midipitch * note_end * note_end
+type note =
+   {
+      channel    : int;
+      midipitch  : int;
+      on_time    : int;
+      on_vel     : int;
+      off_time   : int;
+      off_vel    : int;
+   }
 
-let note_compare (_, Int7 p1, (beg1, _), (end1, _))
-                 (_, Int7 p2, (beg2, _), (end2, _)) =
-   if beg1 != beg2 then compare beg1 beg2
-   else if end1 != end2 then compare end1 end2
-   else compare p1 p2;;
+let note_compare n1 n2 =
+   let values n = [ n.on_time; n.off_time; n.midipitch; n.channel ] in
+   compare (values n1) (values n2)
 
-module Note =
-   struct
-      type t = note
-      let compare = note_compare
-   end
-
-module NoteSet = Set.Make(Note)
-
-type track = { name : string; notes : NoteSet.t }
-let empty_track = { name = ""; notes = NoteSet.empty };;
+type track = { name : string; notes : note PSet.t }
+let empty_track = { name = ""; notes = PSet.create note_compare };;
 
 let check_ctrltype t =
    if not (Ctrl.is_supported t) then
@@ -34,25 +28,25 @@ class channel (_id : int option) =
    object (self)
       val mutable ctrls_ =
          let e = Ctrl.all_supported () /@ fun c -> c, Ctrl.create_map c in
-         BatPMap.of_enum e
+         PMap.of_enum e
 
       method id = _id
       method ctrl ctrltype =
          check_ctrltype ctrltype;
-         try BatPMap.find ctrltype ctrls_
+         try PMap.find ctrltype ctrls_
          with Not_found ->
-            let n = BatEnum.count self#enum_ctrls in
+            let n = Enum.count self#enum_ctrls in
             invalid_arg ((string_of_int n) ^ (Ctrl.name ctrltype))
 
-      method set_ctrl ctrltype ctrl = ctrls_ <- BatPMap.add ctrltype ctrl ctrls_
-      method enum_ctrls = (BatPMap.enum ctrls_)
+      method set_ctrl ctrltype ctrl = ctrls_ <- PMap.add ctrltype ctrl ctrls_
+      method enum_ctrls = (PMap.enum ctrls_)
 
       initializer
          let check_id id =
             if id < 0 || id >= 16 then
                raise Out_of_range
          in
-         BatOption.may check_id _id
+         Option.may check_id _id
    end;;
 
 class file ?(tracks_count = 0) (_division : int) =
@@ -71,14 +65,21 @@ class file ?(tracks_count = 0) (_division : int) =
       method track i = tracks_.(i)
       method channel i = channels_.(i)
       method enum_channels =
-         (BatArray.range channels_) /@ (fun i -> i, self#channel i)
+         (Array.range channels_) /@ (fun i -> i, self#channel i)
 
       method insert_note t c n (on_time, on_vel) (off_time, off_vel) =
-         let note = (c, n, (on_time, on_vel), (off_time, off_vel)) in
+         let note = {
+            channel = c;
+            midipitch = n;
+            on_time;
+            on_vel;
+            off_time;
+            off_vel;
+         } in
          let old_track = self#track t in
          let new_track = {
             name = old_track.name;
-            notes = NoteSet.add note old_track.notes
+            notes = PSet.add note old_track.notes
          } in
          tracks_.(t) <- new_track
    end;;

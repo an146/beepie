@@ -1,11 +1,13 @@
 open OUnit
 
+let create () = CtrlMap.create ~min:0 ~max:127 13
+
 let test_empty () =
-   let m = CtrlMap.create 13 in
+   let m = create() in
    assert_equal (CtrlMap.get 0 m) 13;;
 
 let test_set () =
-   let m = CtrlMap.create 13 in
+   let m = create() in
    let m = CtrlMap.set 100 14 m in
    let m = CtrlMap.set 50 15 m in
    let m = CtrlMap.set 75 16 m in
@@ -18,14 +20,14 @@ let test_set () =
    assert_equal (CtrlMap.get 101 m) 14;;
 
 let test_unset () =
-   let m = CtrlMap.create 13 in
+   let m = create() in
    let m' = m in
    let m' = CtrlMap.set 100 14 m' in
    let m' = CtrlMap.set 100 13 m' in
    assert_equal (CtrlMap.bindings m) (CtrlMap.bindings m');;
 
 let test_move_left () =
-   let m = CtrlMap.create 13 in
+   let m = create() in
    let m = CtrlMap.set 100 14 m in
    let m = CtrlMap.set 99 14 m in
    let m = CtrlMap.set 98 14 m in

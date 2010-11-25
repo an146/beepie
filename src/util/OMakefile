@@ -1,6 +1,5 @@
 FILES[] =
    bst
-   intX
    miscUtils
 
 OCamlLibrary (libutil, $(FILES))
