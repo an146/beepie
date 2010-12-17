@@ -27,7 +27,7 @@ let rec parse_varlen input =
       v
    else begin
       let ret = v * 0x80 + (parse_varlen input) in
-      assert (ret >= 0);
+      if ret < 0 then failwith "overflow";
       ret
    end
 
@@ -54,17 +54,17 @@ let parse_track_chunk chunk =
                in
                let code    = status land 0xf0 in
                let channel = status land 0x0F in
-               let voice1 f c args = f c args.(0) in
-               let voice2 f c args = f c args.(0) args.(1) in
+               let voice1 f = 1, fun c args -> f c args.(0) in
+               let voice2 f = 2, fun c args -> f c args.(0) args.(1) in
                let nargs, cmd =
                   match code with
-                  | 0x80 -> 2, voice2 off
-                  | 0x90 -> 2, voice2 on
-                  | 0xA0 -> 2, voice2 aftertouch
-                  | 0xB0 -> 1, voice2 ctrl
-                  | 0xC0 -> 1, voice1 program
-                  | 0xD0 -> 1, voice1 chpressure
-                  | 0xE0 -> 2, voice2 pitchwheel2
+                  | 0x80 -> voice2 off
+                  | 0x90 -> voice2 on
+                  | 0xA0 -> voice2 aftertouch
+                  | 0xB0 -> voice2 ctrl
+                  | 0xC0 -> voice1 program
+                  | 0xD0 -> voice1 chpressure
+                  | 0xE0 -> voice2 pitchwheel2
                   | _    -> assert false
                in
                while Array.length !args < nargs do
