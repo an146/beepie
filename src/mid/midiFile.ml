@@ -67,21 +67,13 @@ class file ?(tracks_count = 0) (_division : int) =
       method enum_channels =
          (Array.range channels_) /@ (fun i -> i, self#channel i)
 
-      method insert_note t c n (on_time, on_vel) (off_time, off_vel) =
-         let note = {
-            channel = c;
-            midipitch = n;
-            on_time;
-            on_vel;
-            off_time;
-            off_vel;
-         } in
-         let old_track = self#track t in
+      method insert_note track note =
+         let old_track = self#track track in
          let new_track = {
             name = old_track.name;
             notes = PSet.add note old_track.notes
          } in
-         tracks_.(t) <- new_track
+         tracks_.(track) <- new_track
    end;;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

@@ -2,6 +2,7 @@ open IO
 open BigEndian
 open MidiAsm
 open MidiCmd
+open MidiFile
 
 type chunk = {
    magic  : string;
@@ -128,9 +129,15 @@ let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
                else
                   default_velocity on_vel
             in
-            let e1 = (on_time, on_vel) in
-            let e2 = (off_time, off_vel) in
-            file#insert_note track c n e1 e2;
+            let note = {
+               channel = c;
+               midipitch = n;
+               on_time;
+               on_vel;
+               off_time;
+               off_vel;
+            } in
+            file#insert_note track note;
             notes.(c).(n) <- None
    in
    let ctrl c t time v =
