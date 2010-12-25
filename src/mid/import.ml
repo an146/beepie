@@ -118,9 +118,9 @@ let parse_chunks (input, inoffset) =
    Enum.from_while get_chunk
 
 let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
-   let notes = Array.init 16 (fun i -> ignore i; Array.make 128 None) in
-   let off c n off_time off_vel =
-      match notes.(c).(n) with
+   let notes = Array.init 16 (fun _ -> Array.make 128 None) in
+   let off channel midipitch off_time off_vel =
+      match notes.(channel).(midipitch) with
       | None -> ()
       | Some (track, on_time, on_vel) ->
             let off_vel =
@@ -130,22 +130,17 @@ let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
                   default_velocity on_vel
             in
             let note = {
-               channel = c;
-               midipitch = n;
-               on_time;
-               on_vel;
-               off_time;
-               off_vel;
+               channel; midipitch;
+               on_time; on_vel;
+               off_time; off_vel;
             } in
             file#insert_note track note;
-            notes.(c).(n) <- None
+            notes.(channel).(midipitch) <- None
    in
    let ctrl c t time v =
       if Ctrl.is_supported t then
          let channel = file#channel c in
-         let map = channel#ctrl t in
-         let map = CtrlMap.set time v map in
-         channel#set_ctrl t map
+         channel#ctrl t |> CtrlMap.set time v |> channel#set_ctrl t
    in
    let handle_event (track, (time, ev)) =
       match ev with
@@ -162,7 +157,7 @@ let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
             ctrl c Ctrl.PitchWheel time v
       | _ -> ()
    in
-   Enum.iter handle_event (MiscUtils.enum_merge2 tracks)
+   tracks |> MiscUtils.enum_merge2i compare |> Enum.iter handle_event
 
 let import_input input =
    let chunks = parse_chunks (pos_in input) in

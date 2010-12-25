@@ -1,6 +1,6 @@
 open MidiFile
 
-val export_stream : file -> (int * int * MidiCmd.t) Enum.t
+val export_events : file -> (int * int * MidiCmd.t) Enum.t
 
 val export_file : file -> string -> unit
 

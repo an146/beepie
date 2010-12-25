@@ -3,7 +3,9 @@ OCAMLPACKS[] +=
    oUnit
 
 TESTS[] =
+   binaryHeapTest
    ctrlMapTest
+   exportTest
    importTest
    suites
 

@@ -35,7 +35,7 @@ let test_simple_notes () =
       ]
    in
    let get_track_notes t = PSet.enum t.notes |> List.of_enum in
-   let imp_notes = Array.enum file#tracks /@ get_track_notes |> List.of_enum in
+   let imp_notes = file#enum_tracks /@ get_track_notes |> List.of_enum in
    assert_equal ~printer:notes_printer notes imp_notes;;
 
 let test_ctrls () =

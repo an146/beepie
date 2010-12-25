@@ -34,16 +34,16 @@ let name = function
    | PitchWheel -> "pitchwheel"
    | Controller n -> "controller" ^ (string_of_int n);;
 
+let default_value ctrltype =
+   if ctrltype = pitchwheel then 0x2000
+   else if ctrltype = volume then 100
+   else if ctrltype = balance || ctrltype = pan then 64
+   else 0
+
 let create_map ctrltype =
    let min = 0 in
    let max = if ctrltype = pitchwheel then 0x3FFF else 127 in
-   let default =
-      if ctrltype = pitchwheel then 0x2000
-      else if ctrltype = volume then 100
-      else if ctrltype = balance || ctrltype = pan then 64
-      else 0
-   in
-   CtrlMap.create ~min ~max default;;
+   CtrlMap.create ~min ~max (default_value ctrltype);;
 
 let is_supported ctrltype =
    let unsupported = [
@@ -66,11 +66,9 @@ let check_supported ctrltype =
    else
       raise Unsupported
 
-let all_supported () =
-   let controllers =
-      (0 -- 127) /@ (fun i -> Controller i) // is_supported
-   in
-   Enum.append controllers (List.enum [Program; PitchWheel]);;
+let all_supported =
+   let controllers = (0 -- 127) /@ (fun i -> Controller i) // is_supported in
+   Program :: PitchWheel :: (List.of_enum controllers)
 
 (* vim: set ts=3 sw=3 tw=80 : *)
 
