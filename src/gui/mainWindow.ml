@@ -17,7 +17,7 @@ let add_file (f : MidiFile.file) =
    let text = "Append Frame" in
    let label = GMisc.label ~text:"Page" () in
    let border_width = 10 in
-   let frame = 
+   let frame =
       let ign f x = ignore (f x) in
       let packing = ign (files#append_page ~tab_label:label#coerce) in
       GBin.frame ~label:text ~border_width ~packing ()
