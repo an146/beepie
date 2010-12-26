@@ -117,7 +117,11 @@ let parse_chunks (input, inoffset) =
    in
    Enum.from_while get_chunk
 
-let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
+let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
+   let file = ref (File.create division) in
+   for i = 1 to (Enum.count tracks) do
+      file := File.add_track !file
+   done;
    let notes = Array.init 16 (fun _ -> Array.make 128 None) in
    let off channel midipitch off_time off_vel =
       match notes.(channel).(midipitch) with
@@ -130,17 +134,17 @@ let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
                   default_velocity on_vel
             in
             let note = {
-               channel; midipitch;
+               midipitch;
                on_time; on_vel;
                off_time; off_vel;
             } in
-            file#insert_note track note;
+            file := File.add_note ~channel track note !file;
             notes.(channel).(midipitch) <- None
    in
    let ctrl c t time v =
       if Ctrl.is_supported t then
-         let channel = file#channel c in
-         channel#ctrl t |> CtrlMap.set time v |> channel#set_ctrl t
+         let ctrlmap = File.ctrlmap (c, t) !file |> CtrlMap.set time v in
+         file := File.set_ctrlmap (c, t) ctrlmap !file
    in
    let handle_event (track, (time, ev)) =
       match ev with
@@ -157,7 +161,8 @@ let do_import file (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
             ctrl c Ctrl.PitchWheel time v
       | _ -> ()
    in
-   tracks |> MiscUtils.enum_merge2i compare |> Enum.iter handle_event
+   tracks |> MiscUtils.enum_merge2i compare |> Enum.iter handle_event;
+   !file
 
 let import_input input =
    let chunks = parse_chunks (pos_in input) in
@@ -170,18 +175,14 @@ let import_input input =
    if fmt != 1 then
       failwith "unsupported MIDI format";
    let tracks_count = read_ui16 header.input in
+   ignore tracks_count;
    let division = read_ui16 header.input in
-   let file = new MidiFile.file ~tracks_count division in
    let tracks = chunks // (fun c -> c.magic = "MTrk") /@ parse_track_chunk in
-   do_import file tracks;
-   file
+   do_import division tracks
 
 let import_inline ?(division = 240) tracks =
-   let tracks_count = List.length tracks in
-   let file = new MidiFile.file ~tracks_count division in
    let tracks = List.enum tracks /@ List.enum in
-   do_import file tracks;
-   file
+   do_import division tracks
 
 let import_file filename =
    let channel = open_in_bin filename in
@@ -194,7 +195,6 @@ let import_file filename =
          | e -> raise e
    in
    close_in channel;
-   file#set_filename filename;
    file
 
 (* vim: set ts=3 sw=3 tw=80 : *)

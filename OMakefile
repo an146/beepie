@@ -13,15 +13,18 @@ foreach (d, $(SRC_DIRS))
 
 .SUBDIRS: _build
 
+.PHONY: all
+all: gui tester
+
 .PHONY: test-gui
 test-gui: gui
    ./_build/gui/gui
 
 .PHONY: test
-test: tester
+test: all
    ./_build/tests/tester
 
-.DEFAULT: gui test
+.DEFAULT: all test
 #.DEFAULT: test-gui
 
 .PHONY: clean

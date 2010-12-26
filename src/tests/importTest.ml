@@ -25,17 +25,17 @@ let test_simple_notes () =
    let notes =
       [
          [
-            note 0 0 (0, 64) (100, Import.default_velocity 64);
-            note 0 0 (100, 127) (200, Import.default_velocity 127);
-            note 1 2 (200, 32) (300, 65);
-            note 1 3 (200, 100) (400, 100);
+            0, note 0 (0, 64) (100, Import.default_velocity 64);
+            0, note 0 (100, 127) (200, Import.default_velocity 127);
+            1, note 2 (200, 32) (300, 65);
+            1, note 3 (200, 100) (400, 100);
          ];
          [
          ]
       ]
    in
-   let get_track_notes t = PSet.enum t.notes |> List.of_enum in
-   let imp_notes = file#enum_tracks /@ get_track_notes |> List.of_enum in
+   let get_track_notes t = File.enum_notes ~track:t file |> List.of_enum in
+   let imp_notes = File.tracks file /@ get_track_notes |> List.of_enum in
    assert_equal ~printer:notes_printer notes imp_notes;;
 
 let test_ctrls () =
@@ -55,8 +55,7 @@ let test_ctrls () =
       ]
    in
    let test ctrltype values =
-      let channel = file#channel 0 in
-      let ctrl = channel#ctrl ctrltype in
+      let ctrl = File.ctrlmap (0, ctrltype) file in
       let printer values =
          match values with
          | [] -> ""

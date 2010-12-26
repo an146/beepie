@@ -4,7 +4,7 @@ open GMain
 module type MainWindow_sig =
    sig
       val window : GWindow.window
-      val add_file : MidiFile.file -> unit
+      val add_file : MidiFile.File.t -> unit
       val set_status : string -> unit
    end
 
@@ -19,7 +19,7 @@ module Make (MainWindow : MainWindow_sig) = struct
          MainWindow.set_status "Done";;
 
    let new_file () =
-      MainWindow.add_file (new MidiFile.file 240)
+      MainWindow.add_file (MidiFile.File.create 240)
 
    let open_files () =
       let filenames = FileDialog.get_open_filenames (MainWindow.window) in

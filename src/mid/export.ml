@@ -11,15 +11,15 @@ type channel_ctx = {
 
 type event =
    (* order matters, the priority of events is determined by compare *)
-   | Off of note
+   | Off of (int * note)
    | Ctrl of int * Ctrl.t * (int * int)
-   | On of note
+   | On of (int * note)
 
 let event_time e =
    match e with
-   | Off n -> n.off_time
+   | Off (_, n) -> n.off_time
    | Ctrl (_, _, (time, _)) -> time
-   | On n -> n.on_time
+   | On (_, n) -> n.on_time
 
 let export_events file =
    let cctxs =
@@ -33,7 +33,7 @@ let export_events file =
          ctrls_current;
          ctrls_cached = PMap.empty
       } in
-      Array.init 16 (fun i -> file#channel_owner i |> Option.map ctx)
+      Array.init 16 (fun i -> File.channel_owner i file |> Option.map ctx)
    in
    let owned i = Option.is_some cctxs.(i)
    and cctx i =
@@ -41,14 +41,14 @@ let export_events file =
       | None -> failwith "unowned channel"
       | Some ctx -> ctx
    in
-   let e_notes =
-      let e_track t = PSet.enum t.notes /@ fun n -> On n in
-      file#enum_tracks /@ e_track
+   let e_ons =
+      let e_track track = File.enum_notes ~track file /@ fun n -> On n in
+      File.tracks file /@ e_track
    and e_ctrls =
       let all_channels = 0 -- 15 |> List.of_enum in
       let ctrls = List.cartesian_product all_channels Ctrl.all_supported in
       let e_ctrl (ch, ct) =
-         let ctrlmap = (file#channel ch)#ctrl ct in
+         let ctrlmap = File.ctrlmap (ch, ct) file in
          CtrlMap.enum ctrlmap /@ fun c -> Ctrl (ch, ct, c)
       in
       List.enum ctrls // (fun (i, _) -> owned i) /@ e_ctrl
@@ -60,7 +60,7 @@ let export_events file =
    in
    let heap = BinaryHeap.make e_cmp (16 * (128 + 1 + 1)) in
    let not_empty e = not (Enum.is_empty e) in
-   e_notes // not_empty |> Enum.iter (BinaryHeap.push heap);
+   e_ons // not_empty |> Enum.iter (BinaryHeap.push heap);
    e_ctrls // not_empty |> Enum.iter (BinaryHeap.push heap);
    let get_events () =
       if BinaryHeap.is_empty heap then raise Enum.No_more_elements;
@@ -72,10 +72,10 @@ let export_events file =
          BinaryHeap.reorder_top heap;
       match ev with
       | None -> assert false
-      | Some (Off n) ->
-            let ctx = cctx n.channel in
+      | Some (Off (c, n)) ->
+            let ctx = cctx c in
             ctx.ons <- ctx.ons - 1;
-            [n.off_time, ctx.track, noteoff n]
+            [n.off_time, ctx.track, noteoff (c, n)]
       | Some (Ctrl (ch, ct, (t, v))) ->
             let ctx = cctx ch in
             let cur_v = PMap.find ct ctx.ctrls_current in
@@ -89,14 +89,14 @@ let export_events file =
                ctx.ctrls_current <- PMap.add ct v ctx.ctrls_current;
                [t, ctx.track, ctrl2 ch ct v]
             )
-      | Some (On n) ->
-            let ctx = cctx n.channel in
+      | Some (On (c, n)) ->
+            let ctx = cctx c in
             let time, track = n.on_time, ctx.track in
             ctx.ons <- ctx.ons + 1;
-            Enum.singleton (Off n) |> BinaryHeap.push heap;
-            let ret = [time, track, noteon n] in
+            Enum.singleton (Off (c, n)) |> BinaryHeap.push heap;
+            let ret = [time, track, noteon (c, n)] in
             if ctx.ons = 1 then
-               let ctrl_cmd (ct, v) = time, track, ctrl2 n.channel ct v in
+               let ctrl_cmd (ct, v) = time, track, ctrl2 c ct v in
                let ctrl_cmds = PMap.enum ctx.ctrls_cached /@ ctrl_cmd in
                Enum.fold (flip List.cons) ret ctrl_cmds
             else

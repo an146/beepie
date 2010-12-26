@@ -4,11 +4,11 @@ open OUnit
 open Printf
 
 let test_simple_notes () =
-   let file = new file ~tracks_count:2 240 in
-   file#insert_note 0 (note 0 30 (0, 64) (100, 65));
-   file#insert_note 0 (note 0 30 (300, 64) (400, 65));
-   let channel = file#channel 0 in
-   let pw = channel#ctrl Ctrl.pitchwheel in
+   let channel = 0 in
+   let file = File.create 240 |> File.add_track in
+   let file = File.add_note ~channel 0 (note 30 (0, 64) (100, 65)) file in
+   let file = File.add_note ~channel 0 (note 30 (300, 64) (400, 65)) file in
+   let pw = File.ctrlmap (0, Ctrl.pitchwheel) file in
    let pw = CtrlMap.set 0   0x2000 pw in (* default, no effect *)
    let pw = CtrlMap.set 50  0x2001 pw in
 
@@ -18,7 +18,7 @@ let test_simple_notes () =
    let pw = CtrlMap.set 200 0x2000 pw in
 
    let pw = CtrlMap.set 201 0x2004 pw in (* comes into effect at 300 *)
-   channel#set_ctrl Ctrl.pitchwheel pw;
+   let file = File.set_ctrlmap (0, Ctrl.pitchwheel) pw file in
    let events = List.of_enum (Export.export_events file) in
    let printer l =
       let print (time, track, ev) =
