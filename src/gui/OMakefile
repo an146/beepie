@@ -6,7 +6,6 @@ FILES[] =
    fileDialog
    gui
    mainWindow
-   menu
 
 PROGRAM = gui
 
