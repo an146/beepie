@@ -12,6 +12,8 @@ let files =
    let packing = packing ~expand: true in
    GPack.notebook ~tab_pos:`TOP ~packing ();;
 
+let files_assoc = ref []
+
 let set_status s =
    status_ctx#pop ();
    ignore (status_ctx#push s);;
@@ -26,7 +28,7 @@ let add_file (f : MidiFile.file) =
       GBin.frame ~label:text ~border_width ~packing ()
    in
    let _ = GMisc.label ~text ~packing:frame#add () in
-   ignore f;;
+   files_assoc := (Gobject.get_oid frame#as_widget, f) :: !files_assoc
 
 let profile f =
    let start_time = Unix.time () in
@@ -41,9 +43,18 @@ let new_file () =
    add_file (MidiFile.File.create 240)
 
 let open_files () =
-   let filenames = FileDialog.get_open_filenames (window) in
+   let filenames = FileDialog.get_open_filenames window in
    let open_file fn = add_file (Import.import_file fn) in
    profile (fun () -> List.iter open_file filenames)
+
+let saveas_file () =
+   let filename = FileDialog.get_save_filename window in
+   let file_frame = files#get_nth_page (files#current_page) in
+   let file =
+      try List.assoc (Gobject.get_oid file_frame#as_widget) !files_assoc
+      with Not_found -> failwith "no such assoc"
+   in
+   profile (fun () -> Export.export_file file filename)
 
 let do_test_sound () =
    MidiIo.output_note 0 60 1.0;
@@ -96,8 +107,8 @@ class menu packing =
          let wrap_errors f () =
             set_status "";
             try f () with
-                Failure desc -> set_status ("Error: " ^ desc)
-              | _ -> set_status "Unhandled exception occurred"
+            | Failure desc -> set_status ("Error: " ^ desc)
+            | _ -> set_status "Unhandled exception occurred"
          in
 
          let add_item (factory : GMenu.menu GMenu.factory) callback =
@@ -109,9 +120,10 @@ class menu packing =
             let m_file = factory#add_submenu "File" in
             let factory = new GMenu.factory m_file ~accel_group in
             let add_item = add_item factory in
-            let _ = add_item new_file   "New"     ~key:_N in
-            let _ = add_item open_files "Open..." ~key:_O in
-            let _ = add_item Main.quit  "Quit"    ~key:_Q in ()
+            let _ = add_item new_file    "New"        ~key:_N in
+            let _ = add_item open_files  "Open..."    ~key:_O in
+            let _ = add_item saveas_file "Save As..." ~key:_S in
+            let _ = add_item Main.quit   "Quit"       ~key:_Q in ()
          in
 
          (* Settings *)
