@@ -94,13 +94,13 @@ let export_events file =
             let time, track = n.on_time, ctx.track in
             ctx.ons <- ctx.ons + 1;
             Enum.singleton (Off (c, n)) |> BinaryHeap.push heap;
-            let ret = [time, track, noteon (c, n)] in
+            let oncmd = time, track, noteon (c, n) in
             if ctx.ons = 1 then
                let ctrl_cmd (ct, v) = time, track, ctrl2 c ct v in
                let ctrl_cmds = PMap.enum ctx.ctrls_cached /@ ctrl_cmd in
-               Enum.fold (flip List.cons) ret ctrl_cmds
+               List.append (List.of_enum ctrl_cmds) [oncmd]
             else
-               ret
+               [oncmd]
    in
    Enum.from get_events |> Enum.map List.enum |> Enum.flatten
 
