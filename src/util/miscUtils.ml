@@ -31,15 +31,4 @@ let enum_add_prefix prefix e =
 let enum_merge2i cmp e =
    e |> Enum.mapi enum_add_prefix |> enum_merge2 cmp
 
-let enum_group2 cmp e =
-   let f () =
-      match Enum.peek e with
-      | None -> None
-      | Some elt -> Some (Enum.take_while (cmp elt) e)
-   in
-   Enum.from_while f
-
-let enum_product e1 e2 =
-   e1 /@ (fun elt -> e2 |> Enum.clone |> enum_add_prefix elt) |> Enum.flatten
-
 (* vim: set ts=3 sw=3 tw=80 : *)
