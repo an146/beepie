@@ -8,11 +8,10 @@ if $(not $(OCAMLFIND_EXISTS))
 OCAMLPACKS[] +=
    base
    batteries
-   batteries.pa_batteries.syntax
 
 CFLAGS += -I $(shell ocamlc -where)
-OCAMLFLAGS += -thread -syntax camlp4o
-OCAMLDEPFLAGS += -syntax camlp4o
+OCAMLFLAGS += -thread
+OCAMLDEPFLAGS +=
 
 BINDINGS = alsa
 BINDINGS_LINK_FLAGS = -cclib -lasound

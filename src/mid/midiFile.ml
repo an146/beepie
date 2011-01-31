@@ -1,3 +1,4 @@
+open Batteries
 open MidiCmd
 
 exception Channel_conflict

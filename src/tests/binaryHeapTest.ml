@@ -1,3 +1,4 @@
+open Batteries
 open OUnit
 
 let test_heap_sort () =

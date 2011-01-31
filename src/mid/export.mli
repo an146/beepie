@@ -1,3 +1,4 @@
+open Batteries
 open MidiFile
 
 val export_events : File.t -> (int * int * MidiCmd.t) Enum.t

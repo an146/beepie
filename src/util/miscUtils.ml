@@ -1,4 +1,5 @@
 open Base
+open Batteries
 
 let priorityqueue_of_array arr order =
    let q = PriorityQueue.make order in

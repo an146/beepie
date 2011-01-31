@@ -1,3 +1,4 @@
+open Batteries
 open MidiAsm
 open MidiFile
 open OUnit

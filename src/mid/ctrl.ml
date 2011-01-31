@@ -1,3 +1,5 @@
+open Batteries
+
 type t =
   | Program
   | PitchWheel

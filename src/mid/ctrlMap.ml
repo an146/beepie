@@ -1,3 +1,5 @@
+open Batteries
+
 exception Out_of_range
 
 type 'a t = {

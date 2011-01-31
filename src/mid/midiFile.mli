@@ -1,3 +1,5 @@
+open Batteries
+
 type file
 
 type note = {

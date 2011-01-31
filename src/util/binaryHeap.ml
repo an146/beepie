@@ -1,3 +1,5 @@
+open Batteries
+
 type 'a t = {
    heap : 'a DynArray.t;
    cmp : 'a -> 'a -> int;

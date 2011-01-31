@@ -1,3 +1,5 @@
+open Batteries
+
 type 'a t
 
 exception Out_of_range
