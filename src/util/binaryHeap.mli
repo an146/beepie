@@ -1,3 +1,5 @@
+open Batteries
+
 type 'a t
 
 val make : ('a -> 'a -> int) -> int -> 'a t
@@ -9,3 +11,5 @@ val push : 'a t -> 'a -> unit
 val drop : 'a t -> unit
 val pop : 'a t -> 'a
 val reorder_top : 'a t -> unit
+
+val from_enum : ('a -> 'a -> int) -> 'a Enum.t -> 'a t

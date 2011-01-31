@@ -65,7 +65,7 @@ let test_ctrls () =
                let concat v1 v2 = v1 ^ "; " ^ (print v2) in
                List.fold_left concat (print hd) tl
       in
-      assert_equal ~printer (CtrlMap.bindings ctrl) values
+      assert_equal ~printer values (CtrlMap.bindings ctrl)
    in
    test Ctrl.pitchwheel [100, 0x2001; 200, 0x2002];
    test Ctrl.volume [0, 10; 200, 20];;

@@ -6,7 +6,6 @@ if $(not $(OCAMLFIND_EXISTS))
    exit 1
 
 OCAMLPACKS[] +=
-   base
    batteries
 
 CFLAGS += -I $(shell ocamlc -where)

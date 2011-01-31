@@ -5,6 +5,9 @@ type 'a t = {
    cmp : 'a -> 'a -> int;
 }
 
+(* Exported *)
+let length {heap} = DynArray.length heap
+
 (* Internal *)
 let get {heap} i = DynArray.unsafe_get heap i
 let set {heap} i x = DynArray.unsafe_set heap i x
@@ -14,36 +17,34 @@ let swap heap i j =
    set heap i (get heap j);
    set heap j tmp
 
+let rec reorder_down h i =
+   let childs = i * 2 + 1 in
+   if childs >= length h then
+      ()
+   else (
+      let c =
+         if childs + 1 >= length h then
+            childs
+         else if h.cmp (get h childs) (get h (childs + 1)) < 0 then
+            childs
+         else
+            childs + 1
+      in
+      if h.cmp (get h i) (get h c) < 0 then
+         ()
+      else (
+         swap h i c;
+         reorder_down h c
+      )
+   )
+
 (* Exported *)
 let make cmp n = {heap = DynArray.make n; cmp}
-let length {heap} = DynArray.length heap
 let is_empty {heap} = DynArray.empty heap
 
 let top {heap} = DynArray.get heap 0
 
-let reorder_top h =
-   let l = length h in
-   let rec fix_heap i =
-      let childs = i * 2 + 1 in
-      if childs >= l then
-         ()
-      else (
-         let c =
-            if childs + 1 >= l then
-               childs
-            else if h.cmp (get h childs) (get h (childs + 1)) < 0 then
-               childs
-            else
-               childs + 1
-         in
-         if h.cmp (get h i) (get h c) < 0 then
-            ()
-         else (
-            swap h i c;
-            fix_heap c
-         )
-      )
-   in fix_heap 0
+let reorder_top h = reorder_down h 0
 
 let push h x =
    let l = length h in
@@ -66,5 +67,15 @@ let pop h =
    let ret = get h 0 in
    drop h;
    ret
+
+let from_enum cmp e =
+   let rebuild_heap h =
+      for i = (length h) / 2 - 1 downto 0 do
+         reorder_down h i
+      done
+   in
+   let h = {heap = DynArray.of_enum e; cmp} in
+   rebuild_heap h;
+   h
 
 (* vim: set ts=3 sw=3 tw=80 : *)
