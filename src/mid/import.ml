@@ -165,6 +165,10 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
    tracks |> MiscUtils.enum_merge2i compare |> Enum.iter handle_event;
    !file
 
+let do_import d t =
+   try do_import d t
+   with End_of_file -> failwith "unexpected end of file"
+
 let import_input input =
    let chunks = parse_chunks (pos_in input) in
    let header =
@@ -186,16 +190,7 @@ let import_inline ?(division = 240) tracks =
    do_import division tracks
 
 let import_file filename =
-   let channel = open_in_bin filename in
-   let file =
-      try import_input channel
-      with e ->
-         close_in channel;
-         match e with
-         | End_of_file -> failwith "unexpected end of file"
-         | e -> raise e
-   in
-   close_in channel;
-   file
+   let c = open_in_bin filename in
+   finally (fun () -> close_in c) import_input c
 
 (* vim: set ts=3 sw=3 tw=80 : *)
