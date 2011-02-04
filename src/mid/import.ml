@@ -147,6 +147,7 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
          let ctrlmap = File.ctrlmap (c, t) !file |> CtrlMap.set time v in
          file := File.set_ctrlmap (c, t) ctrlmap !file
    in
+   let unhandled = ref 0 in
    let handle_event (track, (time, ev)) =
       match ev with
       | Voice (c, NoteOn (n, v)) ->
@@ -160,9 +161,12 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
             ctrl c Ctrl.Program time v
       | Voice (c, PitchWheel v) ->
             ctrl c Ctrl.PitchWheel time v
-      | _ -> ()
+      | _ ->
+            unhandled := !unhandled + 1
    in
    tracks |> MiscUtils.enum_merge2i compare |> Enum.iter handle_event;
+   if !unhandled > 0 then
+      Printf.printf "%i events unhandled\n%!" !unhandled;
    !file
 
 let do_import d t =
