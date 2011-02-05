@@ -102,6 +102,7 @@ let export_events file =
             if ctx.ons = 1 then
                let ctrl_cmd (ct, v) = time, track, ctrl2 c ct v in
                let ctrl_cmds = PMap.enum ctx.ctrls_cached /@ ctrl_cmd in
+               ctx.ctrls_cached <- PMap.empty;
                List.append (List.of_enum ctrl_cmds) [oncmd]
             else
                [oncmd]
