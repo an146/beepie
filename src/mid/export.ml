@@ -125,10 +125,10 @@ let export_output f out =
    let ntracks = File.tracks_count f in
    write_ui16 out ntracks;
    write_ui16 out (File.division f);
-   let otrks = Array.init ntracks (fun _ -> 0, None, output_string ()) in
+   let tctxs = Array.init ntracks (fun _ -> 0, None, output_string ()) in
    let evs = export_events f in
    let process_event (time, track, cmd) =
-      let prevtime, prevstatus, otrk = otrks.(track) in
+      let prevtime, prevstatus, otrk = tctxs.(track) in
       let dtime = time - prevtime in
       assert (dtime >= 0);
       write_varlen otrk dtime;
@@ -151,7 +151,8 @@ let export_output f out =
          | ChannelPressure a ->
                write_byte o a
          | PitchWheel v ->
-               write_ui16 o v
+               write_byte o (v mod 0x80);
+               write_byte o (v / 0x80)
       in
       let status =
          match cmd with
@@ -168,7 +169,7 @@ let export_output f out =
                nwrite otrk s;
                None
       in
-      otrks.(track) <- time, status, otrk;
+      tctxs.(track) <- time, status, otrk;
    in
    Enum.iter process_event evs;
    let write_track (_, _, otrk) =
@@ -178,7 +179,7 @@ let export_output f out =
       write_i32 out (String.length trk);
       nwrite out trk
    in
-   Array.iter write_track otrks
+   Array.iter write_track tctxs
 
 let export_file file filename =
    let o = open_out_bin filename in
