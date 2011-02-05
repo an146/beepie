@@ -1,16 +1,17 @@
 open Batteries
 open IO
 
-let rec read_varlen input =
-   let b = read_byte input in
-   let v = b mod 0x80 in
-   if b < 0x80 then
-      v
-   else begin
-      let ret = v * 0x80 + (read_varlen input) in
-      if ret < 0 then failwith "overflow";
-      ret
-   end
+let read_varlen input =
+   let rec f acc =
+      let b = read_byte input in
+      let v = acc * 0x80 + b mod 0x80 in
+      if v < 0 then failwith "overflow";
+      if b < 0x80 then
+         v
+      else
+         f v
+   in
+   f 0
 
 let write_varlen o n =
    let l = ref [n mod 0x80] in
