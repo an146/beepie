@@ -4,6 +4,7 @@ open BigEndian
 open MidiAsm
 open MidiCmd
 open MidiFile
+open Varlen
 
 type chunk = {
    magic  : string;
@@ -21,18 +22,6 @@ let rec read_midi_byte is_cmd chunk =
 and read_cmd_byte  = fun c -> read_midi_byte true  c
 and read_data_byte = fun c -> read_midi_byte false c
 
-(* TODO: check for overflow *)
-let rec parse_varlen input =
-   let b = read_byte input in
-   let v = b mod 0x80 in
-   if b < 0x80 then
-      v
-   else begin
-      let ret = v * 0x80 + (parse_varlen input) in
-      if ret < 0 then failwith "overflow";
-      ret
-   end
-
 let parse_track_chunk chunk =
    let running_status = ref (-1) in
    let time = ref 0 in
@@ -42,7 +31,7 @@ let parse_track_chunk chunk =
    in
    let get_event () =
       try
-         let dtime = parse_varlen chunk.input in
+         let dtime = read_varlen chunk.input in
          let first = read_byte chunk.input in
          let status, event =
             if first < 0xF0 then
@@ -75,7 +64,7 @@ let parse_track_chunk chunk =
                status, cmd channel !args
             else if first = 0xFF then
                let mtype = read_data_byte chunk in
-               let len = parse_varlen chunk.input in
+               let len = read_varlen chunk.input in
                let data = really_nread chunk.input len in
                -1, Meta (mtype, data)
             else

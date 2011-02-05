@@ -6,6 +6,7 @@ FILES[] =
    midiAsm
    midiFile
    midiIo
+   varlen
 
 StaticCLibrary(bindings, io_$(BINDINGS))
 OCamlLibrary(libmid, $(FILES))

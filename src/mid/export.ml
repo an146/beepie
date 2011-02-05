@@ -5,6 +5,7 @@ open MidiAsm
 open MidiCmd
 open MidiFile
 open MiscUtils
+open Varlen
 
 type channel_ctx = {
    track : int;
@@ -108,15 +109,6 @@ let export_events file =
                [oncmd]
    in
    Enum.from get_events |> Enum.map List.enum |> Enum.flatten
-
-let write_varlen o n =
-   let l = ref [n mod 0x80] in
-   let n = ref (n / 0x80) in
-   while !n > 0 do
-      l := (!n mod 0x80 + 0x80) :: !l;
-      n := !n / 0x80
-   done;
-   List.iter (write_byte o) !l
 
 let export_output f out =
    nwrite out "MThd";

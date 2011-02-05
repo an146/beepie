@@ -5,6 +5,7 @@ let suites = "" >::: [
    CtrlMapTest.tests;
    ExportTest.tests;
    ImportTest.tests;
+   VarlenTest.tests;
 ];;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
