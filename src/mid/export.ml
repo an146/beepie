@@ -165,8 +165,9 @@ let export_output f out =
    in
    Enum.iter process_event evs;
    let write_track (_, otrk) =
-      nwrite out "MTrk";
+      nwrite otrk "\x00\xFF\x2F\x00";
       let trk = close_out otrk in
+      nwrite out "MTrk";
       write_i32 out (String.length trk);
       nwrite out trk
    in
