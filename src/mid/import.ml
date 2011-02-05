@@ -24,7 +24,7 @@ and read_data_byte = fun c -> read_midi_byte false c
 (* TODO: check for overflow *)
 let rec parse_varlen input =
    let b = read_byte input in
-   let v = b land 0x7F in
+   let v = b mod 0x80 in
    if b < 0x80 then
       v
    else begin
@@ -77,12 +77,7 @@ let parse_track_chunk chunk =
                let mtype = read_data_byte chunk in
                let len = parse_varlen chunk.input in
                let data = really_nread chunk.input len in
-               let event =
-                  match mtype with
-                  | 0x2F -> EndOfTrack
-                  | _    -> UnknownMetaEvent (mtype, data)
-               in
-               -1, event
+               -1, Meta (mtype, data)
             else
                failwith "sysex events unsupported at the moment"
          in

@@ -48,7 +48,7 @@ let inc_usage usage c t =
 let division {division} = division
 
 let add_track f =
-   let track = {notes = PSet.empty} in
+   let track = {notes = PSet.create note_compare} in
    let tracks = Array.append f.tracks [| track |] in
    {f with tracks}
 

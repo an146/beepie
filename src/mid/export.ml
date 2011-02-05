@@ -1,5 +1,8 @@
 open Batteries
+open IO
+open BigEndian
 open MidiAsm
+open MidiCmd
 open MidiFile
 open MiscUtils
 
@@ -105,8 +108,72 @@ let export_events file =
    in
    Enum.from get_events |> Enum.map List.enum |> Enum.flatten
 
+let write_varlen o n =
+   let l = ref [n mod 0x80] in
+   let n = ref (n / 0x80) in
+   while !n > 0 do
+      l := (!n mod 0x80 + 0x80) :: !l;
+      n := !n / 0x80
+   done;
+   List.iter (write_byte o) !l
+
+let export_output f out =
+   nwrite out "MThd";
+   write_i32 out 6;
+   write_ui16 out 1;
+   let ntracks = File.tracks_count f in
+   write_ui16 out ntracks;
+   write_ui16 out (File.division f);
+   let otrks = Array.init ntracks (fun _ -> 0, output_string ()) in
+   let evs = export_events f in
+   let process_event (time, track, cmd) =
+      let prevtime, otrk = otrks.(track) in
+      let dtime = time - prevtime in
+      assert (dtime >= 0);
+      write_varlen otrk dtime;
+      otrks.(track) <- time, otrk;
+      let code = function
+         | NoteOff         _ -> 0x80
+         | NoteOn          _ -> 0x90
+         | NoteAftertouch  _ -> 0xA0
+         | Controller      _ -> 0xB0
+         | Program         _ -> 0xC0
+         | ChannelPressure _ -> 0xD0
+         | PitchWheel      _ -> 0xE0
+      and write_args o = function
+         | NoteOff (a, b)
+         | NoteOn (a, b)
+         | NoteAftertouch (a, b)
+         | Controller (a, b) ->
+               write_byte o a;
+               write_byte o b
+         | Program a
+         | ChannelPressure a ->
+               write_byte o a
+         | PitchWheel v ->
+               write_ui16 o v
+      in
+      match cmd with
+      | Voice (c, cmd) ->
+            write_byte otrk ((code cmd) + c);
+            write_args otrk cmd
+      | Meta (t, s) ->
+            write_byte otrk 0xFF;
+            write_byte otrk t;
+            write_varlen otrk (String.length s);
+            nwrite otrk s
+   in
+   Enum.iter process_event evs;
+   let write_track (_, otrk) =
+      nwrite out "MTrk";
+      let trk = close_out otrk in
+      write_i32 out (String.length trk);
+      nwrite out trk
+   in
+   Array.iter write_track otrks
+
 let export_file file filename =
-   let channel = open_out_bin filename in
-   close_out channel;;
+   let o = open_out_bin filename in
+   finally (fun () -> close_out o) (export_output file) o
 
 (* vim: set ts=3 sw=3 tw=80 : *)

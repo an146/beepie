@@ -1,10 +1,7 @@
+(* TODO: maybe expand Voice? *)
 type t =
    | Voice of int * voice_t
-
-   (* Meta *)
-   | EndOfTrack
-   | TrackName of string
-   | UnknownMetaEvent of int * string
+   | Meta of int * string
 and voice_t =
    | NoteOff         of int * int
    | NoteOn          of int * int
