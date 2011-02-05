@@ -125,14 +125,13 @@ let export_output f out =
    let ntracks = File.tracks_count f in
    write_ui16 out ntracks;
    write_ui16 out (File.division f);
-   let otrks = Array.init ntracks (fun _ -> 0, output_string ()) in
+   let otrks = Array.init ntracks (fun _ -> 0, None, output_string ()) in
    let evs = export_events f in
    let process_event (time, track, cmd) =
-      let prevtime, otrk = otrks.(track) in
+      let prevtime, prevstatus, otrk = otrks.(track) in
       let dtime = time - prevtime in
       assert (dtime >= 0);
       write_varlen otrk dtime;
-      otrks.(track) <- time, otrk;
       let code = function
          | NoteOff         _ -> 0x80
          | NoteOn          _ -> 0x90
@@ -154,18 +153,25 @@ let export_output f out =
          | PitchWheel v ->
                write_ui16 o v
       in
-      match cmd with
-      | Voice (c, cmd) ->
-            write_byte otrk ((code cmd) + c);
-            write_args otrk cmd
-      | Meta (t, s) ->
-            write_byte otrk 0xFF;
-            write_byte otrk t;
-            write_varlen otrk (String.length s);
-            nwrite otrk s
+      let status =
+         match cmd with
+         | Voice (c, cmd) ->
+               let st = (code cmd) + c in
+               if prevstatus <> Some st; then
+                  write_byte otrk st;
+               write_args otrk cmd;
+               Some st
+         | Meta (t, s) ->
+               write_byte otrk 0xFF;
+               write_byte otrk t;
+               write_varlen otrk (String.length s);
+               nwrite otrk s;
+               None
+      in
+      otrks.(track) <- time, status, otrk;
    in
    Enum.iter process_event evs;
-   let write_track (_, otrk) =
+   let write_track (_, _, otrk) =
       nwrite otrk "\x00\xFF\x2F\x00";
       let trk = close_out otrk in
       nwrite out "MTrk";
