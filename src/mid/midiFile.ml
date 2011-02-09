@@ -1,15 +1,8 @@
 open Batteries
 open MidiCmd
+open MidiNote
 
 exception Channel_conflict
-
-type note = {
-   midipitch : int;
-   on_time   : int;
-   on_vel    : int;
-   off_time  : int;
-   off_vel   : int;
-}
 
 type track = {
    notes : (int * note) PSet.t;

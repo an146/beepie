@@ -1,14 +1,9 @@
-(* TODO: maybe expand Voice? *)
-type t =
-   | Voice of int * voice_t
-   | Meta of int * string
-and voice_t =
-   | NoteOff         of int * int
-   | NoteOn          of int * int
-   | NoteAftertouch  of int * int
-   | Controller      of int * int
-   | Program         of int
-   | ChannelPressure of int
-   | PitchWheel      of int
+open Batteries
+
+type t = MidiCmdT.t
+
+(*val channel : voice_t -> int*)
+val read : ?running_status : int ref -> IO.input -> t
+val write : ?running_status : int ref -> 'a IO.output -> t -> unit
 
 (* vim: set ts=3 sw=3 tw=80 : *)

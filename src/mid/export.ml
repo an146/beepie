@@ -2,8 +2,8 @@ open Batteries
 open IO
 open BigEndian
 open MidiAsm
-open MidiCmd
 open MidiFile
+open MidiNote
 open MiscUtils
 open Varlen
 
@@ -117,51 +117,18 @@ let export_output f out =
    let ntracks = File.tracks_count f in
    write_ui16 out ntracks;
    write_ui16 out (File.division f);
-   let tctxs = Array.init ntracks (fun _ -> 0, None, output_string ()) in
+   let tctxs =
+      let tctx _ = 0, ref (-1), output_string () in
+      Array.init ntracks tctx
+   in
    let evs = export_events f in
    let process_event (time, track, cmd) =
-      let prevtime, prevstatus, otrk = tctxs.(track) in
+      let prevtime, running_status, otrk = tctxs.(track) in
       let dtime = time - prevtime in
       assert (dtime >= 0);
       write_varlen otrk dtime;
-      let code = function
-         | NoteOff         _ -> 0x80
-         | NoteOn          _ -> 0x90
-         | NoteAftertouch  _ -> 0xA0
-         | Controller      _ -> 0xB0
-         | Program         _ -> 0xC0
-         | ChannelPressure _ -> 0xD0
-         | PitchWheel      _ -> 0xE0
-      and write_args o = function
-         | NoteOff (a, b)
-         | NoteOn (a, b)
-         | NoteAftertouch (a, b)
-         | Controller (a, b) ->
-               write_byte o a;
-               write_byte o b
-         | Program a
-         | ChannelPressure a ->
-               write_byte o a
-         | PitchWheel v ->
-               write_byte o (v mod 0x80);
-               write_byte o (v / 0x80)
-      in
-      let status =
-         match cmd with
-         | Voice (c, cmd) ->
-               let st = (code cmd) + c in
-               if prevstatus <> Some st; then
-                  write_byte otrk st;
-               write_args otrk cmd;
-               Some st
-         | Meta (t, s) ->
-               write_byte otrk 0xFF;
-               write_byte otrk t;
-               write_varlen otrk (String.length s);
-               nwrite otrk s;
-               None
-      in
-      tctxs.(track) <- time, status, otrk;
+      MidiCmd.write ~running_status otrk cmd;
+      tctxs.(track) <- time, running_status, otrk;
    in
    Enum.iter process_event evs;
    let write_track (_, _, otrk) =

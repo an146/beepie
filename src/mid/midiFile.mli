@@ -1,14 +1,7 @@
 open Batteries
+open MidiNote
 
 type file
-
-type note = {
-   midipitch : int;
-   on_time   : int;
-   on_vel    : int;
-   off_time  : int;
-   off_vel   : int;
-}
 
 module File : sig
    type t = file

@@ -2,8 +2,8 @@ open Batteries
 open IO
 open BigEndian
 open MidiAsm
-open MidiCmd
 open MidiFile
+open MidiNote
 open Varlen
 
 type chunk = {
@@ -11,16 +11,6 @@ type chunk = {
    input  : input;
    offset : unit -> int;
 }
-
-let rec read_midi_byte is_cmd chunk =
-   let offset = chunk.offset () in
-   let b = read_byte chunk.input in
-   if is_cmd != (b >= 0x80) then (
-      failwith (Printf.sprintf "unexpected byte type at 0x%X" offset)
-   );
-   b
-and read_cmd_byte  = fun c -> read_midi_byte true  c
-and read_data_byte = fun c -> read_midi_byte false c
 
 let parse_track_chunk chunk =
    let running_status = ref (-1) in
@@ -32,46 +22,8 @@ let parse_track_chunk chunk =
    let get_event () =
       try
          let dtime = read_varlen chunk.input in
-         let first = read_byte chunk.input in
-         let status, event =
-            if first < 0xF0 then
-               let status, args =
-                  if first >= 0x80 then
-                     first, ref [| |]
-                  else if !running_status >= 0x80 then
-                     !running_status, ref [| first |]
-                  else
-                     failwith "no running status";
-               in
-               let code    = status land 0xf0 in
-               let channel = status land 0x0F in
-               let voice1 f = 1, fun c args -> f c args.(0) in
-               let voice2 f = 2, fun c args -> f c args.(0) args.(1) in
-               let nargs, cmd =
-                  match code with
-                  | 0x80 -> voice2 off
-                  | 0x90 -> voice2 on
-                  | 0xA0 -> voice2 aftertouch
-                  | 0xB0 -> voice2 ctrl
-                  | 0xC0 -> voice1 program
-                  | 0xD0 -> voice1 chpressure
-                  | 0xE0 -> voice2 pitchwheel2
-                  | _    -> assert false
-               in
-               while Array.length !args < nargs do
-                  args := Array.append !args [| read_data_byte chunk |]
-               done;
-               status, cmd channel !args
-            else if first = 0xFF then
-               let mtype = read_data_byte chunk in
-               let len = read_varlen chunk.input in
-               let data = really_nread chunk.input len in
-               -1, Meta (mtype, data)
-            else
-               failwith "sysex events unsupported at the moment"
-         in
-         running_status := status;
-         Some (get_time dtime, event)
+         let cmd = MidiCmd.read ~running_status chunk.input in
+         Some (get_time dtime, cmd)
       with No_more_input -> None
    in
    Enum.from_while get_event
@@ -134,16 +86,16 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
    let unhandled = ref 0 in
    let handle_event (track, (time, ev)) =
       match ev with
-      | Voice (c, NoteOn (n, v)) ->
+      | `NoteOn (c, n, v) ->
             off c n time (-1);
             notes.(c).(n) <- Some (track, time, v)
-      | Voice (c, NoteOff (n, v)) ->
+      | `NoteOff (c, n, v) ->
             off c n time v
-      | Voice (c, Controller (t, v)) ->
+      | `Controller (c, t, v) ->
             ctrl c (Ctrl.Controller t) time v
-      | Voice (c, Program v) ->
+      | `Program (c, v) ->
             ctrl c Ctrl.Program time v
-      | Voice (c, PitchWheel v) ->
+      | `PitchWheel (c, v) ->
             ctrl c Ctrl.PitchWheel time v
       | _ ->
             unhandled := !unhandled + 1

@@ -4,6 +4,7 @@ FILES[] =
    import
    export
    midiAsm
+   midiCmd
    midiFile
    midiIo
    varlen

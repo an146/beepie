@@ -1,13 +1,13 @@
-open MidiCmd
-open MidiFile
+open MidiCmdT
+open MidiNote
 
-let off c a b         = Voice (c, NoteOff         (a, b))
-let on c a b          = Voice (c, NoteOn          (a, b))
-let aftertouch c a b  = Voice (c, NoteAftertouch  (a, b))
-let ctrl c a b        = Voice (c, Controller      (a, b))
-let program c a       = Voice (c, Program         a)
-let chpressure c a    = Voice (c, ChannelPressure a)
-let pitchwheel c a    = Voice (c, PitchWheel      a)
+let off c a b         = `NoteOff         (c, a, b)
+let on c a b          = `NoteOn          (c, a, b)
+let aftertouch c a b  = `NoteAftertouch  (c, a, b)
+let ctrl c a b        = `Controller      (c, a, b)
+let program c a       = `Program         (c, a)
+let chpressure c a    = `ChannelPressure (c, a)
+let pitchwheel c a    = `PitchWheel      (c, a)
 
 let pitchwheel2 c a b = pitchwheel c (a * 0x80 + b)
 let noteoff (c, n)    = off c n.midipitch n.off_vel
