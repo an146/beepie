@@ -80,8 +80,8 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
    in
    let ctrl c t time v =
       if Ctrl.is_supported t then
-         let ctrlmap = File.ctrlmap (c, t) !file |> CtrlMap.set time v in
-         file := File.set_ctrlmap (c, t) ctrlmap !file
+         let map = File.ctrl_map (c, t) !file |> CtrlMap.set time v in
+         file := File.set_ctrl_map (c, t) map !file
    in
    let unhandled = ref 0 in
    let handle_event (track, (time, ev)) =
@@ -97,6 +97,9 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
             ctrl c Ctrl.Program time v
       | `PitchWheel (c, v) ->
             ctrl c Ctrl.PitchWheel time v
+      | `Tempo v ->
+            let map = File.tempo_map !file |> CtrlMap.set time v in
+            file := File.set_tempo_map map !file
       | _ ->
             unhandled := !unhandled + 1
    in

@@ -16,12 +16,14 @@ type channel_ctx = {
 
 type event =
    (* order matters, the priority of events is determined by compare *)
+   | HeadTrackCmd of (int * MidiCmd.t)
    | Off of (int * note)
    | Ctrl of int * Ctrl.t * (int * int)
    | On of (int * note)
 
 let event_time e =
    match e with
+   | HeadTrackCmd (time, _) -> time
    | Off (_, n) -> n.off_time
    | Ctrl (_, _, (time, _)) -> time
    | On (_, n) -> n.on_time
@@ -53,20 +55,40 @@ let export_events file =
       let all_channels = 0 -- 15 |> List.of_enum in
       let ctrls = List.cartesian_product all_channels Ctrl.all_supported in
       let e_ctrl (ch, ct) =
-         let ctrlmap = File.ctrlmap (ch, ct) file in
-         CtrlMap.enum ctrlmap /@ fun c -> Ctrl (ch, ct, c)
+         let ctrl_map = File.ctrl_map (ch, ct) file in
+         CtrlMap.enum ctrl_map /@ fun c -> Ctrl (ch, ct, c)
       in
       List.enum ctrls // (fun (i, _) -> owned i) /@ e_ctrl
+   and e_tempo =
+      let cmd (t, v) = HeadTrackCmd (t, tempo v) in
+      File.tempo_map file |> CtrlMap.enum |> Enum.map cmd
+   in
+   let event_track = function
+      | HeadTrackCmd (time, _) ->
+            -1
+      | Off (c, _)
+      | Ctrl (c, _, _)
+      | On (c, _) ->
+            (cctx c).track
    in
    let e_cmp e1 e2 =
       match Enum.peek e1, Enum.peek e2 with
-      | Some v1, Some v2 -> compare (event_time v1, v1) (event_time v2, v2)
-      | _, _ -> assert false
+      | Some ev1, Some ev2 ->
+            let values ev = event_time ev, event_track ev, ev in
+            compare (values ev1) (values ev2)
+      | _, _ ->
+            assert false
    in
    let heap = BinaryHeap.make e_cmp (16 * (128 + 1 + 1)) in
    let not_empty e = not (Enum.is_empty e) in
-   e_ons // not_empty |> Enum.iter (BinaryHeap.push heap);
-   e_ctrls // not_empty |> Enum.iter (BinaryHeap.push heap);
+   let e_all =
+      [
+         e_ons;
+         e_ctrls;
+         Enum.singleton e_tempo;
+      ] |> List.enum |> Enum.flatten |> Enum.filter not_empty
+   in
+   Enum.iter (BinaryHeap.push heap) e_all;
    let get_events () =
       if BinaryHeap.is_empty heap then raise Enum.No_more_elements;
       let e = BinaryHeap.top heap in
@@ -107,6 +129,8 @@ let export_events file =
                List.append (List.of_enum ctrl_cmds) [oncmd]
             else
                [oncmd]
+      | Some (HeadTrackCmd (time, cmd)) ->
+            [time, -1, cmd]
    in
    Enum.from get_events |> Enum.map List.enum |> Enum.flatten
 
@@ -114,7 +138,7 @@ let export_output f out =
    nwrite out "MThd";
    write_i32 out 6;
    write_ui16 out 1;
-   let ntracks = File.tracks_count f in
+   let ntracks = File.tracks_count f + 1 in
    write_ui16 out ntracks;
    write_ui16 out (File.division f);
    let tctxs =
@@ -123,6 +147,7 @@ let export_output f out =
    in
    let evs = export_events f in
    let process_event (time, track, cmd) =
+      let track = track + 1 in
       let prevtime, running_status, otrk = tctxs.(track) in
       let dtime = time - prevtime in
       assert (dtime >= 0);

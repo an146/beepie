@@ -107,8 +107,11 @@ class menu packing =
          let wrap_errors f () =
             set_status "";
             try f () with
-            | Failure desc -> set_status ("Error: " ^ desc)
-            | _ -> set_status "Unhandled exception occurred"
+            | Failure desc ->
+                  set_status ("Error: " ^ desc)
+            | e ->
+                  let ename = Printexc.to_string e in
+                  set_status ("Unhandled exception occurred: " ^ ename)
          in
 
          let add_item (factory : GMenu.menu GMenu.factory) callback =

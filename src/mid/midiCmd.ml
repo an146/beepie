@@ -22,6 +22,21 @@ let read_data_byte input =
       failwith "unexpected command byte";
    b
 
+let rec decode_be_int ?(acc = 0) l n =
+   match l with
+   | [] when n = 0 ->
+         acc
+   | b :: l when n > 0 ->
+         decode_be_int ~acc:(acc * 0x100 + b) l (n - 1)
+   | _ ->
+         failwith "decode_be_int: length mismatch"
+
+let rec encode_be_int ?(acc = []) v len =
+   match len, v with
+   | 0, 0 -> acc
+   | 0, _ -> failwith "overflow"
+   | n, _ -> encode_be_int ~acc:(v mod 0x100 :: acc) (v / 0x100) (n - 1)
+
 let read ?running_status input =
    let running_status = Option.default (ref (-1)) running_status in
    let first = read_byte input in
@@ -63,8 +78,11 @@ let read ?running_status input =
       let mtype = read_data_byte input in
       let len = read_varlen input in
       let data = really_nread input len in
+      let databytes = data |> String.to_list |> List.map int_of_char in
       running_status := -1;
-      `UnsupportedMeta (mtype, data)
+      match mtype with
+      | 0x51 -> tempo (decode_be_int databytes 3)
+      | t -> `UnsupportedMeta (t, data)
    else
       failwith "sysex events unsupported at the moment"
 
@@ -85,12 +103,6 @@ let write_voice ~running_status out cmd =
    running_status := status
 
 let write_meta ~running_status out cmd =
-   let rec encode_meta_int ?(acc = []) v n =
-      match n, v with
-      | 0, 0 -> acc
-      | 0, _ -> failwith "overflow"
-      | n, _ -> encode_meta_int ~acc:(v mod 0x100 :: acc) (v / 0x100) (n - 1)
-   in
    let write_meta_s t s =
       write_byte out 0xFF;
       write_byte out t;
@@ -103,7 +115,7 @@ let write_meta ~running_status out cmd =
    running_status := -1;
    match cmd with
    | `Tempo t ->
-         write_meta_l 0x51 (encode_meta_int t 3)
+         write_meta_l 0x51 (encode_be_int t 3)
    | `UnsupportedMeta (t, s) ->
          write_meta_s t s
 

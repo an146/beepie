@@ -12,14 +12,15 @@ type file = {
    division : int;
    tracks : track array;
    channel_usage : (int * int) option array;
-   ctrlmaps : ((int * Ctrl.t), int CtrlMap.t) PMap.t;
+   ctrl_maps : ((int * Ctrl.t), int CtrlMap.t) PMap.t;
+   tempo_map : int CtrlMap.t;
 }
 
 let note_compare (c1, n1) (c2, n2) =
    let values c n = [n.on_time; n.off_time; n.midipitch; c] in
    compare (values c1 n1) (values c2 n2)
 
-let default_ctrlmaps =
+let default_ctrl_maps =
    let entry (ch, ct) = (ch, ct), Ctrl.create_map ct in
    Ctrl.all_supported_c |> List.enum |> Enum.map entry |> PMap.of_enum
 
@@ -27,7 +28,8 @@ let create division = {
    division;
    tracks = [| |];
    channel_usage = Array.make 16 None;
-   ctrlmaps = default_ctrlmaps;
+   ctrl_maps = default_ctrl_maps;
+   tempo_map = CtrlMap.create ~min:0 ~max:0xFFFFFF (60000000 / 120);
 }
 
 let inc_usage usage c t =
@@ -64,19 +66,23 @@ let channel_owner c f =
    | Some (o, _) -> Some o
    | None -> None
 
-let check_ctrlmap_idx (ch, ct) =
+let check_ctrl_idx (ch, ct) =
    if ch < 0 || ch >= 16 then
       invalid_arg "invalid channel idx";
    if not (Ctrl.is_supported ct) then
       invalid_arg ((Ctrl.name ct) ^ ": unsupported")
 
-let ctrlmap idx f =
-   check_ctrlmap_idx idx;
-   PMap.find idx f.ctrlmaps
+let ctrl_map idx f =
+   check_ctrl_idx idx;
+   PMap.find idx f.ctrl_maps
 
-let set_ctrlmap idx map f =
-   check_ctrlmap_idx idx;
-   {f with ctrlmaps = PMap.add idx map f.ctrlmaps}
+let set_ctrl_map idx map f =
+   check_ctrl_idx idx;
+   {f with ctrl_maps = PMap.add idx map f.ctrl_maps}
+
+let tempo_map {tempo_map} = tempo_map
+
+let set_tempo_map tempo_map f = {f with tempo_map}
 
 let enum_notes ?track f =
    match track with
@@ -95,8 +101,10 @@ module File = struct
    let add_track = add_track
    let add_note = add_note
    let channel_owner = channel_owner
-   let ctrlmap = ctrlmap
-   let set_ctrlmap = set_ctrlmap
+   let ctrl_map = ctrl_map
+   let set_ctrl_map = set_ctrl_map
+   let tempo_map = tempo_map
+   let set_tempo_map = set_tempo_map
    let enum_notes = enum_notes
    let tracks_count = tracks_count
    let tracks = tracks

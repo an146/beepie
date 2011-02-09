@@ -39,13 +39,14 @@ let test_simple_notes () =
    let imp_notes = File.tracks file /@ get_track_notes |> List.of_enum in
    assert_equal ~printer:notes_printer notes imp_notes;;
 
-let test_ctrls () =
+let test_maps () =
    let file =
       Import.import_inline [
          [
             0,   pitchwheel 0 0x1000;
             0,   pitchwheel 0 0x2000;
             0,   ctrl 0 7 10;
+            100, tempo 12345;
             100, pitchwheel 0 0x2001;
             150, pitchwheel 0 0x2001;
             200, ctrl 0 7 20;
@@ -55,8 +56,7 @@ let test_ctrls () =
          ]
       ]
    in
-   let test ctrltype values =
-      let ctrl = File.ctrlmap (0, ctrltype) file in
+   let test map values =
       let printer values =
          match values with
          | [] -> ""
@@ -65,15 +65,17 @@ let test_ctrls () =
                let concat v1 v2 = v1 ^ "; " ^ (print v2) in
                List.fold_left concat (print hd) tl
       in
-      assert_equal ~printer values (CtrlMap.bindings ctrl)
+      assert_equal ~printer values (CtrlMap.bindings map)
    in
-   test Ctrl.pitchwheel [100, 0x2001; 200, 0x2002];
-   test Ctrl.volume [0, 10; 200, 20];;
+   let c ct = File.ctrl_map (0, ct) file in
+   test (c Ctrl.pitchwheel) [100, 0x2001; 200, 0x2002];
+   test (c Ctrl.volume) [0, 10; 200, 20];
+   test (File.tempo_map file) [100, 12345]
 
 let tests =
    "import" >::: [
       "simple-notes" >:: test_simple_notes;
-      "ctrls" >:: test_ctrls
+      "maps" >:: test_maps;
    ];;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

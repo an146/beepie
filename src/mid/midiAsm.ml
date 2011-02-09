@@ -25,4 +25,6 @@ let note midipitch (on_time, on_vel) (off_time, off_vel) = {
    off_time; off_vel;
 }
 
+let tempo t = `Tempo t
+
 (* vim: set ts=3 sw=3 tw=80 : *)
