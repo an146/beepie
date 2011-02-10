@@ -1,5 +1,4 @@
 open Batteries
-open MidiCmd
 open MidiNote
 
 exception Channel_conflict

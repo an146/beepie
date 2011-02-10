@@ -8,6 +8,7 @@ type voice_t = [
    | `PitchWheel      of int * int
 ] and meta_t = [
    | `Tempo of int
+   | `TimeSig of TimeSig.t
    | `UnsupportedMeta of int * string
 ]
 

@@ -1,4 +1,3 @@
-open MidiCmdT
 open MidiNote
 
 let off c a b         = `NoteOff         (c, a, b)

@@ -7,15 +7,6 @@ open Varlen
 
 type t = MidiCmdT.t
 
-let channel = function
-   | `NoteOff         (c, _, _) -> c
-   | `NoteOn          (c, _, _) -> c
-   | `NoteAftertouch  (c, _, _) -> c
-   | `Controller      (c, _, _) -> c
-   | `Program         (c, _)    -> c
-   | `ChannelPressure (c, _)    -> c
-   | `PitchWheel      (c, _)    -> c
-
 let read_data_byte input =
    let b = read_byte input in
    if b >= 0x80 then
@@ -80,9 +71,10 @@ let read ?running_status input =
       let data = really_nread input len in
       let databytes = data |> String.to_list |> List.map int_of_char in
       running_status := -1;
-      match mtype with
-      | 0x51 -> tempo (decode_be_int databytes 3)
-      | t -> `UnsupportedMeta (t, data)
+      match mtype, databytes with
+      | 0x51, _ -> tempo (decode_be_int databytes 3)
+      | 0x58, b1 :: b2 :: _ :: _ :: [] -> `TimeSig (TimeSig.make b1 b2)
+      | t, _ -> `UnsupportedMeta (t, data)
    else
       failwith "sysex events unsupported at the moment"
 
@@ -116,6 +108,8 @@ let write_meta ~running_status out cmd =
    match cmd with
    | `Tempo t ->
          write_meta_l 0x51 (encode_be_int t 3)
+   | `TimeSig ts ->
+         write_meta_l 0x58 [TimeSig.numer ts; TimeSig.denom ts; 0x60; 8]
    | `UnsupportedMeta (t, s) ->
          write_meta_s t s
 
