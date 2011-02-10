@@ -5,12 +5,12 @@ exception Channel_conflict
 
 type track = {
    notes : (int * note) PSet.t;
+   channel_usage : (int * int) list;
 }
 
 type file = {
    division : int;
    tracks : track array;
-   channel_usage : (int * int) option array;
    ctrl_maps : ((int * Ctrl.t), int CtrlMap.t) PMap.t;
    tempo_map : int CtrlMap.t;
    timesig_map : TimeSig.t CtrlMap.t;
@@ -27,24 +27,24 @@ let default_ctrl_maps =
 let create division = {
    division;
    tracks = [| |];
-   channel_usage = Array.make 16 None;
    ctrl_maps = default_ctrl_maps;
    tempo_map = CtrlMap.create ~min:0 ~max:0xFFFFFF (60000000 / 120);
    timesig_map = CtrlMap.create (TimeSig.create 4 4);
 }
 
-let inc_usage usage c t =
-   let new_usage =
-      match usage.(c) with
-      | None -> Some (t, 1)
-      | Some (t', u) -> if t != t' then raise Channel_conflict; Some (t, u + 1)
+let inc_usage track c =
+   let usage = track.channel_usage in
+   let u =
+      try List.assoc c usage
+      with Not_found -> 0
    in
-   usage.(c) <- new_usage
+   let channel_usage = usage |> List.remove_assoc c |> List.cons (c, u + 1) in
+   {track with channel_usage}
 
 let division {division} = division
 
 let add_track f =
-   let track = {notes = PSet.create note_compare} in
+   let track = {notes = PSet.create note_compare; channel_usage = []} in
    let tracks = Array.append f.tracks [| track |] in
    {f with tracks}
 
@@ -56,16 +56,14 @@ let add_note ?channel t note f =
       | Some c -> c
       | None -> assert false
    in
-   let channel_usage = Array.copy f.channel_usage in
-   inc_usage channel_usage c t;
+   let track = inc_usage track c in
    let notes = PSet.add (c, note) track.notes in
-   tracks.(t) <- {notes};
-   {f with tracks; channel_usage}
+   tracks.(t) <- {track with notes};
+   {f with tracks}
 
-let channel_owner c f =
-   match f.channel_usage.(c) with
-   | Some (o, _) -> Some o
-   | None -> None
+let channel_owner c {tracks} =
+   let owns t = List.mem_assoc c t.channel_usage in
+   Array.Exceptionless.findi owns tracks
 
 let check_ctrl_idx (ch, ct) =
    if ch < 0 || ch >= 16 then
