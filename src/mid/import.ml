@@ -54,11 +54,8 @@ let parse_chunks (input, inoffset) =
    in
    Enum.from_while get_chunk
 
-let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
+let import_events ?(division = 240) events =
    let file = ref (File.create division) in
-   for i = 1 to (Enum.count tracks) do
-      file := File.add_track !file
-   done;
    let notes = Array.init 16 (fun _ -> Array.make 128 None) in
    let off channel midipitch off_time off_vel =
       match notes.(channel).(midipitch) with
@@ -84,7 +81,10 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
          file := File.set_ctrl_map (c, t) map !file
    in
    let unhandled = ref 0 in
-   let handle_event (track, (time, ev)) =
+   let handle_event (time, track, ev) =
+      while File.tracks_count !file <= track do
+         file := File.add_track !file
+      done;
       match ev with
       | `NoteOn (c, n, v) ->
             off c n time (-1);
@@ -100,17 +100,27 @@ let do_import division (tracks : (int * MidiCmd.t) Enum.t Enum.t) =
       | `Tempo v ->
             let map = File.tempo_map !file |> CtrlMap.set time v in
             file := File.set_tempo_map map !file
+      | `TimeSig ts ->
+            let map = File.timesig_map !file |> CtrlMap.set time ts in
+            file := File.set_timesig_map map !file
       | _ ->
             unhandled := !unhandled + 1
    in
-   tracks |> MiscUtils.enum_merge2i compare |> Enum.iter handle_event;
+   Enum.iter handle_event events;
    if !unhandled > 0 then
       Printf.printf "%i events unhandled\n%!" !unhandled;
    !file
 
-let do_import d t =
-   try do_import d t
+let import_events ?division t =
+   try import_events ?division t
    with End_of_file -> failwith "unexpected end of file"
+
+let import_events2 ?division tracks =
+   let interleaved =
+      let f i e = e /@ fun (t, c) -> t, i, c in
+      tracks |> Enum.mapi f |> MiscUtils.enum_merge2 compare
+   in
+   import_events ?division interleaved
 
 let import_input input =
    let chunks = parse_chunks (pos_in input) in
@@ -126,11 +136,11 @@ let import_input input =
    ignore tracks_count;
    let division = read_ui16 header.input in
    let tracks = chunks // (fun c -> c.magic = "MTrk") /@ parse_track_chunk in
-   do_import division tracks
+   import_events2 ~division tracks
 
-let import_inline ?(division = 240) tracks =
+let import_inline ?division tracks =
    let tracks = List.enum tracks /@ List.enum in
-   do_import division tracks
+   import_events2 ?division tracks
 
 let import_file filename =
    let c = open_in_bin filename in

@@ -13,6 +13,7 @@ type file = {
    channel_usage : (int * int) option array;
    ctrl_maps : ((int * Ctrl.t), int CtrlMap.t) PMap.t;
    tempo_map : int CtrlMap.t;
+   timesig_map : TimeSig.t CtrlMap.t;
 }
 
 let note_compare (c1, n1) (c2, n2) =
@@ -29,6 +30,7 @@ let create division = {
    channel_usage = Array.make 16 None;
    ctrl_maps = default_ctrl_maps;
    tempo_map = CtrlMap.create ~min:0 ~max:0xFFFFFF (60000000 / 120);
+   timesig_map = CtrlMap.create (TimeSig.create 4 4);
 }
 
 let inc_usage usage c t =
@@ -80,8 +82,10 @@ let set_ctrl_map idx map f =
    {f with ctrl_maps = PMap.add idx map f.ctrl_maps}
 
 let tempo_map {tempo_map} = tempo_map
-
 let set_tempo_map tempo_map f = {f with tempo_map}
+
+let timesig_map {timesig_map} = timesig_map
+let set_timesig_map timesig_map f = {f with timesig_map}
 
 let enum_notes ?track f =
    match track with
@@ -104,6 +108,8 @@ module File = struct
    let set_ctrl_map = set_ctrl_map
    let tempo_map = tempo_map
    let set_tempo_map = set_tempo_map
+   let timesig_map = timesig_map
+   let set_timesig_map = set_timesig_map
    let enum_notes = enum_notes
    let tracks_count = tracks_count
    let tracks = tracks

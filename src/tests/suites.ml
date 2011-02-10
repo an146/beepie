@@ -5,6 +5,7 @@ let suites = "" >::: [
    CtrlMapTest.tests;
    ExportTest.tests;
    ImportTest.tests;
+   ImportExportTest.tests;
    VarlenTest.tests;
 ];;
 

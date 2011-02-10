@@ -62,6 +62,9 @@ let export_events file =
    and e_tempo =
       let cmd (t, v) = HeadTrackCmd (t, tempo v) in
       File.tempo_map file |> CtrlMap.enum |> Enum.map cmd
+   and e_timesig =
+      let cmd (t, v) = HeadTrackCmd (t, `TimeSig v) in
+      File.timesig_map file |> CtrlMap.enum |> Enum.map cmd
    in
    let event_track = function
       | HeadTrackCmd (time, _) ->
@@ -86,6 +89,7 @@ let export_events file =
          e_ons;
          e_ctrls;
          Enum.singleton e_tempo;
+         Enum.singleton e_timesig;
       ] |> List.enum |> Enum.flatten |> Enum.filter not_empty
    in
    Enum.iter (BinaryHeap.push heap) e_all;
