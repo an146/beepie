@@ -2,10 +2,11 @@ open Batteries
 open IO
 open BigEndian
 open MidiAsm
-open MidiFile
 open MidiNote
 open MiscUtils
 open Varlen
+module File = MidiFile
+module Track = MidiTrack
 
 type channel_ctx = {
    track : int;
@@ -49,7 +50,7 @@ let export_events file =
       | Some ctx -> ctx
    in
    let e_ons =
-      let e_track track = File.enum_notes ~track file /@ fun n -> On n in
+      let e_track t = Track.enum t /@ fun n -> On n in
       File.tracks file /@ e_track
    and e_ctrls =
       let all_channels = 0 -- 15 |> List.of_enum in

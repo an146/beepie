@@ -2,9 +2,9 @@ open Batteries
 open IO
 open BigEndian
 open MidiAsm
-open MidiFile
 open MidiNote
 open Varlen
+module File = MidiFile
 
 type chunk = {
    magic  : string;

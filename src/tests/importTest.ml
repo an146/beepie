@@ -1,7 +1,8 @@
 open Batteries
 open MidiAsm
-open MidiFile
 open OUnit
+module File = MidiFile
+module Track = MidiTrack
 
 let notes_printer notes =
    string_of_int (List.length (List.hd notes));;
@@ -35,7 +36,7 @@ let test_simple_notes () =
          ]
       ]
    in
-   let get_track_notes t = File.enum_notes ~track:t file |> List.of_enum in
+   let get_track_notes t = Track.enum t |> List.of_enum in
    let imp_notes = File.tracks file /@ get_track_notes |> List.of_enum in
    assert_equal ~printer:notes_printer notes imp_notes;;
 

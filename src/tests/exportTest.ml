@@ -1,8 +1,8 @@
 open Batteries
 open MidiAsm
-open MidiFile
 open OUnit
 open Printf
+module File = MidiFile
 
 let test_simple_notes () =
    let channel = 0 in

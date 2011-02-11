@@ -18,7 +18,7 @@ let set_status s =
    status_ctx#pop ();
    ignore (status_ctx#push s);;
 
-let add_file (f : MidiFile.file) =
+let add_file (f : MidiFile.t) =
    let text = "Append Frame" in
    let label = GMisc.label ~text:"Page" () in
    let border_width = 10 in
@@ -40,7 +40,7 @@ let profile f =
       set_status "Done";;
 
 let new_file () =
-   add_file (MidiFile.File.create 240)
+   add_file (MidiFile.create 240)
 
 let open_files () =
    let filenames = FileDialog.get_open_filenames window in
