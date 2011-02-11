@@ -21,6 +21,8 @@ let inc_usage c track =
 
 let create () = {notes = PSet.create note_compare; channel_usage = []}
 
+let is_empty {notes} = PSet.is_empty notes
+
 let add_note note c track =
    let track = inc_usage c track in
    {track with notes = PSet.add (c, note) track.notes}

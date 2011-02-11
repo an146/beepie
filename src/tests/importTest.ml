@@ -73,10 +73,25 @@ let test_maps () =
    test (c Ctrl.volume) [0, 10; 200, 20];
    test (File.tempo_map file) [100, 12345]
 
+let test_omit_head_track () =
+   let file =
+      Import.import_inline [
+         [
+            100, tempo 12345;
+         ];
+         [
+            0,   off 0 30 64;
+            100, on  0 30 64;
+         ];
+      ]
+   in
+   assert_equal 1 (File.tracks_count file)
+
 let tests =
    "import" >::: [
       "simple-notes" >:: test_simple_notes;
       "maps" >:: test_maps;
+      "omit-head-track" >:: test_omit_head_track;
    ];;
 
 (* vim: set ts=3 sw=3 tw=80 : *)

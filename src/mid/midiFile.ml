@@ -28,13 +28,15 @@ let division {division} = division
 
 let tracks f = List.enum f.tracks
 let set_tracks tracks f = {f with tracks = List.of_enum tracks}
+let tracks_count {tracks} = List.length tracks
+let track i f = List.at f.tracks i
 
 let add_track f =
    let track = Track.create () in
    let tracks = List.append f.tracks [track] in
    {f with tracks}
 
-let remove_track f i =
+let remove_track i f =
    let tracks = tracks f |> DynArray.of_enum in
    DynArray.delete tracks i;
    set_tracks (DynArray.enum tracks) f
@@ -72,7 +74,5 @@ let set_tempo_map tempo_map f = {f with tempo_map}
 
 let timesig_map {timesig_map} = timesig_map
 let set_timesig_map timesig_map f = {f with timesig_map}
-
-let tracks_count {tracks} = List.length tracks
 
 (* vim: set ts=3 sw=3 tw=80 : *)

@@ -4,6 +4,7 @@ open MidiNote
 type t
 
 val create : unit -> t
+val is_empty : t -> bool
 val add_note : note -> int -> t -> t
 val owns : int -> t -> bool
 val enum : t -> (int * note) Enum.t
