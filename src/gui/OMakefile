@@ -1,9 +1,12 @@
 OCAMLPACKS[] +=
    lablgtk2
+   react
    unix
 
 FILES[] =
    fileDialog
+   fileWidget
+   gtkSugar
    gui
    mainWindow
 
