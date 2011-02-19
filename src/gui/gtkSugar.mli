@@ -17,7 +17,7 @@ val coerce : < coerce : 'a; .. > -> 'a
 (** Create a GUI window, containing one widget.  When the window is closed it
     will automatically end the GUI loop. *)
 val window :
-  ?callbacks:(unit -> unit) list -> title:string -> widget_t -> window_t
+  ?callbacks:(unit -> unit) list -> title:string -> widget_t * bool option -> window_t
 
 (** Show a window *)
 val show : window_t -> unit
@@ -42,36 +42,49 @@ val configure_callback :
   ('a -> GdkEvent.Configure.t -> bool) -> 'a -> event_callback_t
 
 (** Box widgets, for housing other widgets *)
-val vbox : widget_t list -> widget_t
-val hbox : widget_t list -> widget_t
+val vbox :
+  ?expand:bool ->
+  (widget_t * bool option) list -> widget_t * bool option
+
+val hbox :
+  ?expand:bool ->
+  (widget_t * bool option) list -> widget_t * bool option
 
 (** Drawing area widget which can be used for custom widgets *)
 val drawing_area :
+  ?expand:bool ->
   ?callbacks:(GMisc.drawing_area -> event_callback_t) list ->
-  int -> int -> widget_t
+  int -> int -> widget_t * bool option
 
 val layout :
+  ?expand:bool ->
   ?callbacks:(GPack.layout -> event_callback_t) list ->
-  int -> int -> widget_t
+  int -> int -> widget_t * bool option
 
 val scrolled_window :
-  int -> int -> widget_t -> widget_t
+  ?expand:bool ->
+  int -> int -> widget_t -> widget_t * bool option
 
 (** Slider widget for adjusting a value.  If [signal] is provided then the
     value of that signal will follow the slider's value.  *)
 val slider :
+  ?expand:bool ->
   ?callbacks:(GRange.scale -> unit) list ->
   ?signal:float React.S.t ->
   ?init:float ->
   ?step:float ->
-  Gtk.Tags.orientation -> (float * float) -> widget_t
+  Gtk.Tags.orientation -> (float * float) -> widget_t * bool option
 
 (** Text-only combo box *)
 val combo_box_text :
-  ?callbacks:(string option -> unit) list -> string list -> widget_t
+  ?expand:bool ->
+  ?callbacks:(string option -> unit) list ->
+  string list -> widget_t * bool option
 
 val notebook :
-  ?g:GPack.notebook Global.t -> widget_t list -> widget_t
+  ?g:GPack.notebook Global.t ->
+  ?expand:bool ->
+  (widget_t * bool option) list -> widget_t * bool option
 
 class ['a] tnotebook :
   object
@@ -84,6 +97,21 @@ class ['a] tnotebook :
   end
 
 val tnotebook :
-  ?g:('a tnotebook) Global.t -> unit -> widget_t
+  ?g:('a tnotebook) Global.t ->
+  ?expand:bool ->
+  unit -> widget_t * bool option
+
+val menubar :
+  ?expand:bool ->
+  GMenu.menu_item list -> widget_t * bool option
+
+val menu :
+  string -> GToolbox.menu_entry list -> GMenu.menu_item
+
+val submenu :
+  string -> GToolbox.menu_entry list -> GToolbox.menu_entry
+
+val menuitem :
+  string -> (unit -> unit) -> GToolbox.menu_entry
 
 (* vim: set ts=2 sw=2 tw=80 : *)
