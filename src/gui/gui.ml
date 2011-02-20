@@ -48,11 +48,7 @@ let create_main_window () =
       let clb' () =
          set_status "";
          try clb () with
-         | Failure desc ->
-               set_status ("Error: " ^ desc)
-         | e ->
-               let ename = Printexc.to_string e in
-               set_status ("Unhandled exception occurred: " ^ ename)
+         e -> set_status ("E: " ^ (Printexc.to_string e))
       in
       menuitem label ?modi ?key clb';
    in
