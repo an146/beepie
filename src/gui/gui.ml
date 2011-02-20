@@ -98,14 +98,7 @@ let create_main_window () =
 let main () =
    MidiIo.init ();
    MidiIo.set_program 0 0;
-
-   MainWindow.init ();
-   MainWindow.refresh_devices ();
-   let window = MainWindow.window in
-   window#maximize ();
-   window#show ();
    create_main_window ();
-
    run [Global.get g_window];
    MidiIo.fini ();;
 
