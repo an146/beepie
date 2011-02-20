@@ -38,8 +38,9 @@ class file_widget initfile =
       S.map up (S.map MidiFile.tracks_count file_signal)
    in
    object (self)
+      inherit pseudo_widget box#coerce
+
       val tracks_updater = tracks_updater
-      method coerce = box#coerce
       method file = S.value file_signal
       method file_signal = file_signal
       method set_file f = set_file f

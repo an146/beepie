@@ -1,32 +1,27 @@
 open Batteries
 
 (** Abstract widget and window types *)
-type widget_t
-type window_t
+type widget = GObj.widget
+type window
 
-(** Cast un-wrapped GObj widgets to the appropriate widget form.  This provides
-    a simple, if unclean, work-around for widgets which have not been wrapped
-    yet. *)
-val of_gobj_widget : GObj.widget -> widget_t
-
-(** Cast widget_t widgets to Gtk.widget Gtk.obj values *)
-val to_gtk_widget : widget_t -> Gtk.widget Gtk.obj
+(** Cast widget widgets to Gtk.widget Gtk.obj values *)
+val to_gtk_widget : widget -> Gtk.widget Gtk.obj
 
 val coerce : < coerce : 'a; .. > -> 'a
 
 (** Create a GUI window, containing one widget.  When the window is closed it
     will automatically end the GUI loop. *)
 val window :
-  ?callbacks:(unit -> unit) list -> title:string -> widget_t * bool option -> window_t
+  ?callbacks:(unit -> unit) list -> title:string -> widget * bool option -> window
 
 (** Show a window *)
-val show : window_t -> unit
+val show : window -> unit
 
 (** Given a list of windows, show them and run the main Gtk+ loop *)
-val run : window_t list -> unit
+val run : window list -> unit
 
 (** Queue up a widget for update.  Probably most useful in callbacks. *)
-val queue_draw : widget_t -> unit
+val queue_draw : widget -> unit
 
 (** Event callbacks *)
 type event_callback_t
@@ -44,26 +39,26 @@ val configure_callback :
 (** Box widgets, for housing other widgets *)
 val vbox :
   ?expand:bool ->
-  (widget_t * bool option) list -> widget_t * bool option
+  (widget * bool option) list -> widget * bool option
 
 val hbox :
   ?expand:bool ->
-  (widget_t * bool option) list -> widget_t * bool option
+  (widget * bool option) list -> widget * bool option
 
 (** Drawing area widget which can be used for custom widgets *)
 val drawing_area :
   ?expand:bool ->
   ?callbacks:(GMisc.drawing_area -> event_callback_t) list ->
-  int -> int -> widget_t * bool option
+  int -> int -> widget * bool option
 
 val layout :
   ?expand:bool ->
   ?callbacks:(GPack.layout -> event_callback_t) list ->
-  int -> int -> widget_t * bool option
+  int -> int -> widget * bool option
 
 val scrolled_window :
   ?expand:bool ->
-  int -> int -> widget_t -> widget_t * bool option
+  int -> int -> widget -> widget * bool option
 
 (** Slider widget for adjusting a value.  If [signal] is provided then the
     value of that signal will follow the slider's value.  *)
@@ -73,37 +68,46 @@ val slider :
   ?signal:float React.S.t ->
   ?init:float ->
   ?step:float ->
-  Gtk.Tags.orientation -> (float * float) -> widget_t * bool option
+  Gtk.Tags.orientation -> (float * float) -> widget * bool option
 
 (** Text-only combo box *)
 val combo_box_text :
   ?expand:bool ->
   ?callbacks:(string option -> unit) list ->
-  string list -> widget_t * bool option
+  string list -> widget * bool option
+
+class pseudo_widget :
+  widget ->
+  object
+    method coerce : widget
+    method get_oid : int
+  end
 
 val notebook :
   ?g:GPack.notebook Global.t ->
   ?expand:bool ->
-  (widget_t * bool option) list -> widget_t * bool option
+  (widget * bool option) list -> widget * bool option
 
 class ['a] tnotebook :
   object
-    constraint 'a = <coerce : GObj.widget; ..>
+    inherit pseudo_widget
+
+    constraint 'a = #pseudo_widget
     method append_tpage : 'a -> unit
-    method coerce : widget_t
+    method coerce : widget
     method current_tpage : 'a
-    method get_tpage : widget_t -> 'a
+    method get_tpage : widget -> 'a
     method notebook : GPack.notebook
   end
 
 val tnotebook :
   ?g:('a tnotebook) Global.t ->
   ?expand:bool ->
-  unit -> widget_t * bool option
+  unit -> widget * bool option
 
 val menubar :
   ?expand:bool ->
-  GMenu.menu_item list -> widget_t * bool option
+  GMenu.menu_item list -> widget * bool option
 
 val menu :
   string -> GToolbox.menu_entry list -> GMenu.menu_item

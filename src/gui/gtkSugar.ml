@@ -2,18 +2,15 @@ open Batteries
 open React
 
 (** A simple, coercible widget *)
-type widget_t = GObj.widget
+type widget = GObj.widget
 
 (** A basic Gtk+ window type *)
-type window_t = GWindow.window
-
-(** Convert a GObj.widget to a widget_t *)
-external of_gobj_widget : GObj.widget -> widget_t = "%identity"
+type window = GWindow.window
 
 (** Cast everything to a simple widget form *)
 let coerce w = w#coerce
 
-(** Convert a widget_t to a Gtk+ widget *)
+(** Convert a widget to a Gtk+ widget *)
 let to_gtk_widget w = GObj.as_widget w
 
 (** The base Gtk+ window *)
@@ -152,6 +149,12 @@ let combo_box_text ?expand ?callbacks strings =
 
 let setg g w = Option.may (fun g -> Global.set g w) g
 
+class pseudo_widget (w : widget) =
+  object
+    method coerce = w
+    method get_oid = w#get_oid
+  end
+
 let notebook ?g ?expand pages =
   let n = GPack.notebook () in
   let add_page (p, _) = n#append_page p |> ignore in
@@ -160,20 +163,20 @@ let notebook ?g ?expand pages =
   coerce n, expand
 
 class ['a] tnotebook =
+  let notebook = GPack.notebook () in
   object (self)
-    val notebook = GPack.notebook ()
-    val mutable pages = []
+    constraint 'a = #pseudo_widget
+    inherit pseudo_widget notebook#coerce
 
-    method coerce = notebook#coerce
+    val pages = new GUtil.memo ()
     method notebook = notebook
 
     method append_tpage (p : 'a) =
-      let w = p#coerce in
-      let _ = notebook#append_page w in
-      pages <- (w#get_oid, p) :: pages;
+      let _ = notebook#append_page p#coerce in
+      pages#add p
 
     method get_tpage w =
-      try List.assoc w#get_oid pages
+      try pages#find w
       with Not_found -> failwith "page not found"
 
     method current_tpage =
