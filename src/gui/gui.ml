@@ -3,14 +3,23 @@ open FileWidget
 open GdkKeysyms
 open GtkSugar
 
-let test_window () =
+let g_window = Global.empty "window"
+
+let create_main_window () =
    let files = Global.empty "files" in
-   let window_content =
+   let add_file f = (Global.get files)#append_tpage (file_widget f) in
+   let m_file_new () = add_file (MidiFile.create 240) in
+   let m_file_open () =
+      let filenames = FileDialog.get_open_filenames (Global.get g_window) in
+      let open_file fn = add_file (Import.import_file fn) in
+      List.iter open_file filenames
+   in
+   window ~title:"GtkSugar Test" (
       vbox [
          menubar [
             menu "File" [
-               menuitem "New"        ~key:_N (fun () -> ());
-               menuitem "Open..."    ~key:_O (fun () -> ());
+               menuitem "New"        ~key:_N m_file_new;
+               menuitem "Open..."    ~key:_O m_file_open;
                menuitem "Save"       ~key:_S (fun () -> ());
                menuitem "Save as..." ~modi:[`CONTROL; `SHIFT] ~key:_S (fun () -> ());
                menuitem "Quit"       ~key:_Q GMain.Main.quit;
@@ -18,15 +27,7 @@ let test_window () =
          ];
          tnotebook ~g:files ~expand:true;
       ]
-   in
-   let file = MidiFile.create 240 in
-   let wfile = file_widget file in
-   let wnd = window ~title:"GtkSugar Test" window_content in
-   (Global.get files)#append_tpage wfile;
-   wfile#set_file (MidiFile.add_track wfile#file);
-   wfile#set_file (MidiFile.add_track wfile#file);
-   wfile#set_file (MidiFile.add_track wfile#file);
-   wnd
+   ) |> Global.set g_window
 
 let main () =
    MidiIo.init ();
@@ -37,8 +38,9 @@ let main () =
    let window = MainWindow.window in
    window#maximize ();
    window#show ();
+   create_main_window ();
 
-   run [test_window ()];
+   run [Global.get g_window];
    MidiIo.fini ();;
 
 let _ = main ();;

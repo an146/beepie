@@ -2,7 +2,7 @@ open Batteries
 
 (** Abstract widget and window types *)
 type widget = GObj.widget
-type window
+type window = GWindow.window
 
 type widget_entry = window -> widget * bool option
 
