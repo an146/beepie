@@ -4,6 +4,8 @@ open Batteries
 type widget = GObj.widget
 type window
 
+type widget_entry = window -> widget * bool option
+
 (** Cast widget widgets to Gtk.widget Gtk.obj values *)
 val to_gtk_widget : widget -> Gtk.widget Gtk.obj
 
@@ -12,7 +14,7 @@ val coerce : < coerce : 'a; .. > -> 'a
 (** Create a GUI window, containing one widget.  When the window is closed it
     will automatically end the GUI loop. *)
 val window :
-  ?callbacks:(unit -> unit) list -> title:string -> widget * bool option -> window
+  ?callbacks:(unit -> unit) list -> title:string -> widget_entry -> window
 
 (** Show a window *)
 val show : window -> unit
@@ -39,26 +41,26 @@ val configure_callback :
 (** Box widgets, for housing other widgets *)
 val vbox :
   ?expand:bool ->
-  (widget * bool option) list -> widget * bool option
+  widget_entry list -> widget_entry
 
 val hbox :
   ?expand:bool ->
-  (widget * bool option) list -> widget * bool option
+  widget_entry list -> widget_entry
 
 (** Drawing area widget which can be used for custom widgets *)
 val drawing_area :
   ?expand:bool ->
   ?callbacks:(GMisc.drawing_area -> event_callback_t) list ->
-  int -> int -> widget * bool option
+  int -> int -> widget_entry
 
 val layout :
   ?expand:bool ->
   ?callbacks:(GPack.layout -> event_callback_t) list ->
-  int -> int -> widget * bool option
+  int -> int -> widget_entry
 
 val scrolled_window :
   ?expand:bool ->
-  int -> int -> widget -> widget * bool option
+  int -> int -> widget -> widget_entry
 
 (** Slider widget for adjusting a value.  If [signal] is provided then the
     value of that signal will follow the slider's value.  *)
@@ -68,13 +70,13 @@ val slider :
   ?signal:float React.S.t ->
   ?init:float ->
   ?step:float ->
-  Gtk.Tags.orientation -> (float * float) -> widget * bool option
+  Gtk.Tags.orientation -> (float * float) -> widget_entry
 
 (** Text-only combo box *)
 val combo_box_text :
   ?expand:bool ->
   ?callbacks:(string option -> unit) list ->
-  string list -> widget * bool option
+  string list -> widget_entry
 
 class pseudo_widget :
   widget ->
@@ -86,7 +88,7 @@ class pseudo_widget :
 val notebook :
   ?g:GPack.notebook Global.t ->
   ?expand:bool ->
-  (widget * bool option) list -> widget * bool option
+  widget_entry list -> widget_entry
 
 class ['a] tnotebook :
   object
@@ -103,19 +105,33 @@ class ['a] tnotebook :
 val tnotebook :
   ?g:('a tnotebook) Global.t ->
   ?expand:bool ->
-  unit -> widget * bool option
+  widget_entry
+
+type menu_entry = Gtk.accel_group -> Gdk.Tags.modifier list -> GMenu.menu_item
 
 val menubar :
   ?expand:bool ->
-  GMenu.menu_item list -> widget * bool option
+  ?modi:Gdk.Tags.modifier list ->
+  menu_entry list ->
+  widget_entry
 
 val menu :
-  string -> GToolbox.menu_entry list -> GMenu.menu_item
+  string ->
+  ?modi:Gdk.Tags.modifier list ->
+  menu_entry list ->
+  menu_entry
 
 val submenu :
-  string -> GToolbox.menu_entry list -> GToolbox.menu_entry
+  string ->
+  ?modi:Gdk.Tags.modifier list ->
+  menu_entry list ->
+  menu_entry
 
 val menuitem :
-  string -> (unit -> unit) -> GToolbox.menu_entry
+  string ->
+  ?modi:Gdk.Tags.modifier list ->
+  ?key:Gdk.keysym ->
+  (unit -> unit) ->
+  menu_entry
 
 (* vim: set ts=2 sw=2 tw=80 : *)

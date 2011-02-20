@@ -1,5 +1,6 @@
 open Batteries
 open FileWidget
+open GdkKeysyms
 open GtkSugar
 
 let test_window () =
@@ -8,24 +9,24 @@ let test_window () =
       vbox [
          menubar [
             menu "File" [
-               menuitem "New" (fun () -> ());
-               menuitem "Open" (fun () -> ());
-               submenu "Recent" [
-                  menuitem "1" (fun () -> ());
-                  menuitem "2" (fun () -> ());
-               ]
+               menuitem "New"        ~key:_N (fun () -> ());
+               menuitem "Open..."    ~key:_O (fun () -> ());
+               menuitem "Save"       ~key:_S (fun () -> ());
+               menuitem "Save as..." ~modi:[`CONTROL; `SHIFT] ~key:_S (fun () -> ());
+               menuitem "Quit"       ~key:_Q GMain.Main.quit;
             ];
          ];
-         tnotebook ~g:files ~expand:true ();
+         tnotebook ~g:files ~expand:true;
       ]
    in
    let file = MidiFile.create 240 in
    let wfile = file_widget file in
+   let wnd = window ~title:"GtkSugar Test" window_content in
    (Global.get files)#append_tpage wfile;
    wfile#set_file (MidiFile.add_track wfile#file);
    wfile#set_file (MidiFile.add_track wfile#file);
    wfile#set_file (MidiFile.add_track wfile#file);
-   window ~title:"GtkSugar Test" window_content
+   wnd
 
 let main () =
    MidiIo.init ();
