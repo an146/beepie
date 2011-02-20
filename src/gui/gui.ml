@@ -17,6 +17,15 @@ let set_status =
       ignore (ctx#push s)
    )
 
+let profile f =
+   let start_time = Unix.time () in
+   f ();
+   let time = Unix.time () -. start_time in
+   if time >= 0.1 then
+      set_status (Printf.sprintf "Done (%.3f s)" time)
+   else
+      set_status "Done";;
+
 let create_main_window () =
    let files = Global.empty "files" in
    let output_device = Global.empty "output_device" in
@@ -26,11 +35,11 @@ let create_main_window () =
    and m_file_open () =
       let filenames = FileDialog.get_open_filenames (Global.get g_window) in
       let open_file fn = add_file (Import.import_file fn) in
-      List.iter open_file filenames
+      profile (fun () -> List.iter open_file filenames)
    and m_file_saveas () =
       let file = (Global.get files)#current_tpage#file in
       let filename = FileDialog.get_save_filename (Global.get g_window) in
-      Export.export_file file filename
+      profile (fun () -> Export.export_file file filename)
    and m_refresh_devices () =
       let m = Global.get output_device in
       List.iter (fun i -> m#remove i) m#all_children
