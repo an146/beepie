@@ -2,14 +2,17 @@ open Batteries
 open FileWidget
 open GdkKeysyms
 open GtkSugar
+open MiscUtils (* global_init *)
 
 let g_window = Global.empty "window"
 and g_statusbar = Global.empty "statusbar"
 
 let set_status =
-   let ctx () = (Global.get g_statusbar)#new_context ~name:"Status" in
+   let ctx = Global.empty "status_ctx" in
    fun s -> (
-      let ctx = ctx () in
+      let ctx = global_init ctx (fun () ->
+         (Global.get g_statusbar)#new_context ~name:"Status"
+      ) in
       ctx#pop ();
       ignore (ctx#push s)
    )

@@ -24,4 +24,9 @@ let enum_add_prefix prefix e =
 let enum_merge2i cmp e =
    e |> Enum.mapi enum_add_prefix |> enum_merge2 cmp
 
+let global_init g f =
+   if not (Global.isdef g) then
+      Global.set g (f ());
+   Global.get g
+
 (* vim: set ts=3 sw=3 tw=80 : *)
