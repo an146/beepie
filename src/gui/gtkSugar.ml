@@ -194,6 +194,11 @@ let tnotebook ?g ?expand wnd =
   setg g n;
   coerce n, expand
 
+let statusbar ?g ?expand _ =
+  let sb = GMisc.statusbar () in
+  setg g sb;
+  coerce sb, expand
+
 let menubar ?expand ?(modi : Gdk.Tags.modifier list = [`CONTROL]) menus wnd =
   let mb = GMenu.menu_bar () in
   let ag = GtkData.AccelGroup.create () in
@@ -203,9 +208,11 @@ let menubar ?expand ?(modi : Gdk.Tags.modifier list = [`CONTROL]) menus wnd =
 
 type menu_entry = Gtk.accel_group -> Gdk.Tags.modifier list -> GMenu.menu_item
 
-let menu label ?modi items =
+let menu ?g ?gm label ?modi items =
   let item = GMenu.menu_item ~label () in
   let menu = GMenu.menu ~packing:item#set_submenu () in
+  setg g item;
+  setg gm menu;
   fun ag modi' -> (
     let modi = Option.default modi' modi in
     List.iter (fun item -> menu#append (item ag modi)) items;
@@ -213,11 +220,10 @@ let menu label ?modi items =
     item
   )
 
-let submenu = menu
-
-let menuitem label ?modi ?key callback =
+let menuitem ?g label ?modi ?key callback =
   let item = GMenu.menu_item ~label () in
   let _ = item#connect#activate callback in
+  setg g item;
   fun ag modi' -> (
     let modi = Option.default modi' modi in
     Option.may (fun key ->

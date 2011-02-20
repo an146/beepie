@@ -107,6 +107,11 @@ val tnotebook :
   ?expand:bool ->
   widget_entry
 
+val statusbar :
+  ?g:(GMisc.statusbar Global.t) ->
+  ?expand:bool ->
+  widget_entry
+
 type menu_entry = Gtk.accel_group -> Gdk.Tags.modifier list -> GMenu.menu_item
 
 val menubar :
@@ -116,18 +121,15 @@ val menubar :
   widget_entry
 
 val menu :
-  string ->
-  ?modi:Gdk.Tags.modifier list ->
-  menu_entry list ->
-  menu_entry
-
-val submenu :
+  ?g:GMenu.menu_item Global.t ->
+  ?gm:GMenu.menu Global.t ->
   string ->
   ?modi:Gdk.Tags.modifier list ->
   menu_entry list ->
   menu_entry
 
 val menuitem :
+  ?g:GMenu.menu_item Global.t ->
   string ->
   ?modi:Gdk.Tags.modifier list ->
   ?key:Gdk.keysym ->
