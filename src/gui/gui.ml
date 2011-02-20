@@ -56,16 +56,16 @@ let create_main_window () =
       in
       menuitem label ?modi ?key clb';
    in
+   let _C_S = [`CONTROL; `SHIFT] in
    window ~title:"GtkSugar Test" (
       vbox [
          menubar [
             menu "File" [
-               item "New"              ~key:_N m_file_new;
-               item "Open..."          ~key:_O m_file_open;
-               item "Save"             ~key:_S (fun () -> ());
-               item "Save as..."
-                  ~modi:[`CONTROL; `SHIFT] ~key:_S m_file_saveas;
-               item "Quit"             ~key:_Q GMain.Main.quit;
+               item "New"                   ~key:_N m_file_new;
+               item "Open..."               ~key:_O m_file_open;
+               item "Save"                  ~key:_S (fun () -> ());
+               item "Save as..." ~modi:_C_S ~key:_S m_file_saveas;
+               item "Quit"                  ~key:_Q GMain.Main.quit;
             ];
             menu "Settings" [
                menu ~gm:output_device "Output device" [];
