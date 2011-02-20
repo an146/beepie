@@ -42,7 +42,27 @@ let create_main_window () =
       profile (fun () -> Export.export_file file filename)
    and m_refresh_devices () =
       let m = Global.get output_device in
-      List.iter (fun i -> m#remove i) m#all_children
+      List.iter (fun i -> m#remove i) m#all_children;
+      let devices = MidiIo.enum_output_devices () in
+      let have_active = ref false in
+      let items =
+         let group = ref None in
+         let create {MidiIo.id; MidiIo.name} =
+            let label = id ^ "    " ^ name in
+            let active = (MidiIo.get_output_device () = id) in
+            let item = GMenu.radio_menu_item ?group:!group ~label ~active () in
+            if active then have_active := true;
+            group := Some (Option.default item#group !group);
+            let _ = item#connect#activate (fun () ->
+               MidiIo.set_output_device id
+            ) in
+            m#append (item :> GMenu.menu_item);
+            item
+         in
+         List.map create devices
+      in
+      if not !have_active then
+         (List.hd items)#activate ();
    in
    let item label ?modi ?key clb =
       let clb' () =
@@ -66,12 +86,14 @@ let create_main_window () =
             menu "Settings" [
                menu ~gm:output_device "Output device" [];
                item "Refresh devices" m_refresh_devices;
+               item "Test sound" (fun () -> MidiIo.output_note 0 60 1.0);
             ];
          ];
          tnotebook ~g:files ~expand:true;
          statusbar ~g:g_statusbar;
       ]
-   ) |> Global.set g_window
+   ) |> Global.set g_window;
+   m_refresh_devices ()
 
 let main () =
    MidiIo.init ();
