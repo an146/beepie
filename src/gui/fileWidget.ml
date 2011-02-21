@@ -31,18 +31,18 @@ class file_widget initfile =
                tracks_table#attach ~left:j ~top:i ~expand w;
             in
             let btn = button ~relief:`NONE in
-            let sep () = separator `VERTICAL in
+            let sep () = `fill, separator `VERTICAL in
             let row = [
                `fill,   btn (string_of_int (i + 1));
-               `fill,   sep ();
+               sep ();
                `fill,   btn "M";
-               `fill,   sep ();
+               sep ();
                `fill,   btn "S";
-               `fill,   sep ();
+               sep ();
                `expand, btn "Name";
-               `fill,   sep ();
+               sep ();
                `expand, btn "Instr";
-               `fill,   sep ();
+               sep ();
                `expand, slider ~init:0.0 ~step:1.0 `HORIZONTAL (0.0, 127.0);
             ] in
             List.iteri attach row;
