@@ -74,10 +74,11 @@ let create_main_window () =
       in
       menuitem label ?modi ?key clb';
    in
+   let accel = GtkData.AccelGroup.create () in
    let _C_S = [`CONTROL; `SHIFT] in
-   window ~g:g_window ~title:"GtkSugar Test" (
+   window ~g:g_window ~accel ~title:"GtkSugar Test" (
       vbox [
-         `fill, menubar [
+         `fill, menubar ~accel [
             menu "File" [
                item "New"                   ~key:_N m_file_new;
                item "Open..."               ~key:_O m_file_open;
@@ -91,8 +92,8 @@ let create_main_window () =
                item "Test sound" (fun () -> MidiIo.output_note 0 60 1.0);
             ];
          ];
-         `expand, tnotebook ~g:files;
-         `fill, statusbar ~g:g_statusbar;
+         `expand, tnotebook ~g:files ();
+         `fill, statusbar ~g:g_statusbar ();
       ]
    ) |> ignore;
    m_refresh_devices ()
