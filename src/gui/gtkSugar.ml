@@ -102,6 +102,10 @@ let box f contents =
 let vbox = box GPack.vbox
 let hbox = box GPack.hbox
 
+let button ?relief label =
+  let btn = GButton.button ?relief ~label () in
+  btn#coerce
+
 (** Drawing area *)
 let drawing_area ?callbacks width height =
   let area = GMisc.drawing_area ~width ~height () in

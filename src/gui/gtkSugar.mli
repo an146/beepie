@@ -47,6 +47,11 @@ val vbox :
 val hbox :
   (boxing_type * widget) list -> widget
 
+val button :
+  ?relief:Gtk.Tags.relief_style ->
+  string ->
+  widget
+
 (** Drawing area widget which can be used for custom widgets *)
 val drawing_area :
   ?callbacks:(GMisc.drawing_area -> event_callback_t) list ->
