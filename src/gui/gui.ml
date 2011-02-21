@@ -27,10 +27,12 @@ let profile f =
       set_status "Done";;
 
 let create_main_window () =
-   let files = Global.empty "files" in
+   let (files : file_widget tnotebook Global.t) = Global.empty "files" in
    let output_device = Global.empty "output_device" in
 
-   let add_file f = (Global.get files)#append_tpage (file_widget f) in
+   let add_file f =
+      (Global.get files)#append_tpage ~activate:true (file_widget f)
+   in
    let m_file_new () = add_file (MidiFile.create 240)
    and m_file_open () =
       let filenames = FileDialog.get_open_filenames (Global.get g_window) in

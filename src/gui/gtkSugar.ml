@@ -177,8 +177,10 @@ class ['a] tnotebook =
     val pages = new GUtil.memo ()
     method notebook = notebook
 
-    method append_tpage (p : 'a) =
-      let _ = notebook#append_page p#coerce in
+    method append_tpage ?(activate = false) (p : 'a) =
+      let i = notebook#append_page p#coerce in
+      if activate then
+        notebook#goto_page i;
       pages#add p
 
     method get_tpage w =

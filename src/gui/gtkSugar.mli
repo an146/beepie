@@ -95,7 +95,7 @@ class ['a] tnotebook :
     inherit pseudo_widget
 
     constraint 'a = #pseudo_widget
-    method append_tpage : 'a -> unit
+    method append_tpage : ?activate:bool -> 'a -> unit
     method coerce : widget
     method current_tpage : 'a
     method get_tpage : widget -> 'a

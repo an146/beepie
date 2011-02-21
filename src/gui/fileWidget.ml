@@ -27,11 +27,14 @@ class file_widget initfile =
                row := w :: !row;
                j := !j + 1
             in
-            GButton.button ~label:(string_of_int i) () |> attach;
-            GButton.button ~label:"M" () |> attach;
-            GButton.button ~label:"S" () |> attach;
-            GButton.button ~label:"Name" () |> attach ~expand:true;
-            GButton.button ~label:"Instr" () |> attach ~expand:true;
+            GButton.button ~relief:`HALF ~label:(string_of_int i) () |> attach;
+            GButton.button ~relief:`HALF ~label:"M" () |> attach;
+            GButton.button ~relief:`HALF ~label:"S" () |> attach;
+            GButton.button ~relief:`HALF ~label:"Name" () |> attach ~expand:true;
+            GButton.button ~relief:`HALF ~label:"Instr" () |> attach ~expand:true;
+            let s = GRange.scale `HORIZONTAL ~draw_value:false () in
+            s#adjustment#set_bounds ~lower:0.0 ~upper:127.0 ~step_incr:1.0 ();
+            s |> attach ~expand:true;
             Stack.push !row tracks_table_rows;
          done
       in
