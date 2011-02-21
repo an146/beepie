@@ -5,7 +5,9 @@ open React
 class file_widget initfile =
    let box = GPack.vbox () in
    let packing = box#pack in
-   let tracks_table = GPack.table ~columns:5 ~packing () in
+   let tracks_table = GPack.table ~packing () in
+   let _ = GMisc.separator `HORIZONTAL ~packing () in
+   let _ = GPack.vbox ~packing () in
    let tracks_table_rows = Stack.create () in
    let file_signal, set_file = S.create ~eq:(==) initfile in
    let tracks_updater =
@@ -23,15 +25,22 @@ class file_widget initfile =
                let expand =
                   Option.map (fun e -> if e then `X else `NONE) expand
                in
+               if !j >= tracks_table#columns then
+                  tracks_table#set_columns (!j + 1);
                tracks_table#attach ~left:!j ~top:i ?expand w;
                row := w :: !row;
                j := !j + 1
             in
-            GButton.button ~relief:`HALF ~label:(string_of_int i) () |> attach;
-            GButton.button ~relief:`HALF ~label:"M" () |> attach;
-            GButton.button ~relief:`HALF ~label:"S" () |> attach;
-            GButton.button ~relief:`HALF ~label:"Name" () |> attach ~expand:true;
-            GButton.button ~relief:`HALF ~label:"Instr" () |> attach ~expand:true;
+            GButton.button ~relief:`NONE ~label:(string_of_int i) () |> attach;
+            GMisc.separator `VERTICAL () |> attach;
+            GButton.button ~relief:`NONE ~label:"M" () |> attach;
+            GMisc.separator `VERTICAL () |> attach;
+            GButton.button ~relief:`NONE ~label:"S" () |> attach;
+            GMisc.separator `VERTICAL () |> attach;
+            GButton.button ~relief:`NONE ~label:"Name" () |> attach ~expand:true;
+            GMisc.separator `VERTICAL () |> attach;
+            GButton.button ~relief:`NONE ~label:"Instr" () |> attach ~expand:true;
+            GMisc.separator `VERTICAL () |> attach;
             let s = GRange.scale `HORIZONTAL ~draw_value:false () in
             s#adjustment#set_bounds ~lower:0.0 ~upper:127.0 ~step_incr:1.0 ();
             s |> attach ~expand:true;

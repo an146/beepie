@@ -7,7 +7,7 @@ type widget = GObj.widget
 (** A basic Gtk+ window type *)
 type window = GWindow.window
 
-type widget_entry = window -> widget * bool option
+type widget_entry = window -> widget
 
 (** Cast everything to a simple widget form *)
 let coerce w = w#coerce
@@ -15,13 +15,15 @@ let coerce w = w#coerce
 (** Convert a widget to a Gtk+ widget *)
 let to_gtk_widget w = GObj.as_widget w
 
+let setg g w = Option.may (fun g -> Global.set g w) g
+
 (** The base Gtk+ window *)
-let window ?callbacks ~title entry =
+let window ?g ?callbacks ~title entry =
   let w = GWindow.window ~title () in
   ignore (w#connect#destroy GMain.quit);
+  setg g w;
   Option.may (List.iter (fun f -> ignore (w#connect#destroy f))) callbacks;
-  let (content, _) = entry w in
-  w#add content;
+  w#add (entry w);
   w
 
 (** Show a window *)
@@ -82,39 +84,45 @@ let event_box ~callbacks contents =
   e_box
 *)
 
+type boxing_type = [`expand | `fill]
+
 (* Support for box building *)
-let box f ?expand contents wnd =
+let box f contents wnd =
   let (box : GPack.box) = f () in
-  List.iter (fun e ->
-    let (w, exp) = e wnd in
-    box#pack ?expand:exp w
+  List.iter (fun (exp, e) ->
+    let expand =
+      match exp with
+      | `expand -> true
+      | `fill -> false
+    in
+    box#pack ~expand (e wnd)
   ) contents;
-  coerce box, expand
+  coerce box
 
 (** Vertical and horizontal boxes for widget packing *)
 let vbox = box GPack.vbox
 let hbox = box GPack.hbox
 
 (** Drawing area *)
-let drawing_area ?expand ?callbacks width height wnd =
+let drawing_area ?callbacks width height wnd =
   let area = GMisc.drawing_area ~width ~height () in
   connect_callbacks ?callbacks area;
-  coerce area, expand
+  coerce area
 
 (** Layout *)
-let layout ?expand ?callbacks layout_width layout_height wnd =
+let layout ?callbacks layout_width layout_height wnd =
   let layout = GPack.layout ~layout_width ~layout_height () in
   connect_callbacks ?callbacks layout;
-  coerce layout, expand
+  coerce layout
 
 (** Scrolled window *)
-let scrolled_window ?expand width height child wnd =
+let scrolled_window width height child wnd =
   let sw = GBin.scrolled_window ~width ~height () in
   sw#add child;
-  coerce sw, expand
+  coerce sw
 
 (** Slider *)
-let slider ?expand ?callbacks ?signal ?init ?step orientation (lower, upper) wnd =
+let slider ?callbacks ?signal ?init ?step orientation (lower, upper) wnd =
   let s = GRange.scale `HORIZONTAL ~draw_value:false () in
   s#adjustment#set_bounds ~lower ~upper ?step_incr:step ();
   (* Create a signal which tracks changes in the slider *)
@@ -134,10 +142,10 @@ let slider ?expand ?callbacks ?signal ?init ?step orientation (lower, upper) wnd
           ignore (s#connect#value_changed (fun () -> callback s))
       ) callbacks;
   ) callbacks;
-  coerce s, expand
+  coerce s
 
 (** Text combo-box *)
-let combo_box_text ?expand ?callbacks strings wnd =
+let combo_box_text ?callbacks strings wnd =
   let (combo, _) as combo_full = GEdit.combo_box_text ~strings () in
   Option.may (
     fun callbacks ->
@@ -151,9 +159,7 @@ let combo_box_text ?expand ?callbacks strings wnd =
           )
       ) callbacks;
   ) callbacks;
-  coerce combo, expand
-
-let setg g w = Option.may (fun g -> Global.set g w) g
+  coerce combo
 
 class pseudo_widget (w : widget) =
   object
@@ -161,12 +167,12 @@ class pseudo_widget (w : widget) =
     method get_oid = w#get_oid
   end
 
-let notebook ?g ?expand pages wnd =
+let notebook ?g pages wnd =
   let n = GPack.notebook () in
-  let add_page p = p wnd |> fst |> n#append_page |> ignore in
+  let add_page p = p wnd |> n#append_page |> ignore in
   List.iter add_page pages;
   setg g n;
-  coerce n, expand
+  coerce n
 
 class ['a] tnotebook =
   let notebook = GPack.notebook () in
@@ -191,22 +197,26 @@ class ['a] tnotebook =
       notebook#current_page |> notebook#get_nth_page |> self#get_tpage
   end
 
-let tnotebook ?g ?expand wnd =
+let tnotebook ?g wnd =
   let n = new tnotebook in
   setg g n;
-  coerce n, expand
+  coerce n
 
-let statusbar ?g ?expand _ =
+let statusbar ?g _ =
   let sb = GMisc.statusbar () in
   setg g sb;
-  coerce sb, expand
+  coerce sb
 
-let menubar ?expand ?(modi : Gdk.Tags.modifier list = [`CONTROL]) menus wnd =
+let separator o wnd =
+  let sep = GMisc.separator o () in
+  coerce sep
+
+let menubar ?(modi : Gdk.Tags.modifier list = [`CONTROL]) menus wnd =
   let mb = GMenu.menu_bar () in
   let ag = GtkData.AccelGroup.create () in
   List.iter (fun m -> mb#append (m ag modi)) menus;
   wnd#add_accel_group ag;
-  coerce mb, expand
+  coerce mb
 
 type menu_entry = Gtk.accel_group -> Gdk.Tags.modifier list -> GMenu.menu_item
 

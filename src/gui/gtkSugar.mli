@@ -4,7 +4,7 @@ open Batteries
 type widget = GObj.widget
 type window = GWindow.window
 
-type widget_entry = window -> widget * bool option
+type widget_entry = window -> widget
 
 (** Cast widget widgets to Gtk.widget Gtk.obj values *)
 val to_gtk_widget : widget -> Gtk.widget Gtk.obj
@@ -14,6 +14,7 @@ val coerce : < coerce : 'a; .. > -> 'a
 (** Create a GUI window, containing one widget.  When the window is closed it
     will automatically end the GUI loop. *)
 val window :
+  ?g: window Global.t ->
   ?callbacks:(unit -> unit) list -> title:string -> widget_entry -> window
 
 (** Show a window *)
@@ -38,34 +39,30 @@ val expose_callback :
 val configure_callback :
   ('a -> GdkEvent.Configure.t -> bool) -> 'a -> event_callback_t
 
+type boxing_type = [`expand | `fill]
+
 (** Box widgets, for housing other widgets *)
 val vbox :
-  ?expand:bool ->
-  widget_entry list -> widget_entry
+  (boxing_type * widget_entry) list -> widget_entry
 
 val hbox :
-  ?expand:bool ->
-  widget_entry list -> widget_entry
+  (boxing_type * widget_entry) list -> widget_entry
 
 (** Drawing area widget which can be used for custom widgets *)
 val drawing_area :
-  ?expand:bool ->
   ?callbacks:(GMisc.drawing_area -> event_callback_t) list ->
   int -> int -> widget_entry
 
 val layout :
-  ?expand:bool ->
   ?callbacks:(GPack.layout -> event_callback_t) list ->
   int -> int -> widget_entry
 
 val scrolled_window :
-  ?expand:bool ->
   int -> int -> widget -> widget_entry
 
 (** Slider widget for adjusting a value.  If [signal] is provided then the
     value of that signal will follow the slider's value.  *)
 val slider :
-  ?expand:bool ->
   ?callbacks:(GRange.scale -> unit) list ->
   ?signal:float React.S.t ->
   ?init:float ->
@@ -74,7 +71,6 @@ val slider :
 
 (** Text-only combo box *)
 val combo_box_text :
-  ?expand:bool ->
   ?callbacks:(string option -> unit) list ->
   string list -> widget_entry
 
@@ -87,7 +83,6 @@ class pseudo_widget :
 
 val notebook :
   ?g:GPack.notebook Global.t ->
-  ?expand:bool ->
   widget_entry list -> widget_entry
 
 class ['a] tnotebook :
@@ -104,18 +99,19 @@ class ['a] tnotebook :
 
 val tnotebook :
   ?g:('a tnotebook) Global.t ->
-  ?expand:bool ->
   widget_entry
 
 val statusbar :
   ?g:(GMisc.statusbar Global.t) ->
-  ?expand:bool ->
+  widget_entry
+
+val separator :
+  Gtk.Tags.orientation ->
   widget_entry
 
 type menu_entry = Gtk.accel_group -> Gdk.Tags.modifier list -> GMenu.menu_item
 
 val menubar :
-  ?expand:bool ->
   ?modi:Gdk.Tags.modifier list ->
   menu_entry list ->
   widget_entry

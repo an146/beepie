@@ -75,9 +75,9 @@ let create_main_window () =
       menuitem label ?modi ?key clb';
    in
    let _C_S = [`CONTROL; `SHIFT] in
-   window ~title:"GtkSugar Test" (
+   window ~g:g_window ~title:"GtkSugar Test" (
       vbox [
-         menubar [
+         `fill, menubar [
             menu "File" [
                item "New"                   ~key:_N m_file_new;
                item "Open..."               ~key:_O m_file_open;
@@ -91,10 +91,10 @@ let create_main_window () =
                item "Test sound" (fun () -> MidiIo.output_note 0 60 1.0);
             ];
          ];
-         tnotebook ~g:files ~expand:true;
-         statusbar ~g:g_statusbar;
+         `expand, tnotebook ~g:files;
+         `fill, statusbar ~g:g_statusbar;
       ]
-   ) |> Global.set g_window;
+   ) |> ignore;
    m_refresh_devices ()
 
 let main () =
