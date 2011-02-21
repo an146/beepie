@@ -70,7 +70,8 @@ val slider :
   ?callbacks:(GRange.scale -> unit) list ->
   ?signal:float React.S.t ->
   ?init:float ->
-  ?step:float ->
+  ?step_incr:float ->
+  ?page_incr:float ->
   Gtk.Tags.orientation -> (float * float) -> widget
 
 (** Text-only combo box *)

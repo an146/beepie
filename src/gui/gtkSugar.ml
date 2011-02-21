@@ -125,9 +125,9 @@ let scrolled_window width height child =
   coerce sw
 
 (** Slider *)
-let slider ?callbacks ?signal ?init ?step orientation (lower, upper) =
+let slider ?callbacks ?signal ?init ?step_incr ?page_incr orientation (lower, upper) =
   let s = GRange.scale `HORIZONTAL ~draw_value:false () in
-  s#adjustment#set_bounds ~lower ~upper ?step_incr:step ();
+  s#adjustment#set_bounds ~lower ~upper ?step_incr ?page_incr ();
   (* Create a signal which tracks changes in the slider *)
   let signal, send =
     (* Default to the lowest value if not initializing value is provided. *)

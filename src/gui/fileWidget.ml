@@ -43,7 +43,8 @@ class file_widget initfile =
                sep ();
                `expand, btn "Instr";
                sep ();
-               `expand, slider ~init:0.0 ~step:1.0 `HORIZONTAL (0.0, 127.0);
+               `expand, slider ~init:0.0 ~step_incr:1.0 ~page_incr:7.0
+                              `HORIZONTAL (0.0, 127.0);
             ] in
             List.iteri attach row;
             Stack.push (List.map snd row) tracks_table_rows;
