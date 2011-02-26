@@ -38,7 +38,7 @@ class file_widget initfile =
          if n > 0 then tracks_table#set_rows n;
          for i = oldrows to n - 1 do
             let attach j (exp, w) =
-               Gobject.Property.set w#as_widget Widget.P.can_focus false;
+               w#misc#set_can_focus false;
                let expand =
                   match exp with
                   | `fill -> `NONE
@@ -94,12 +94,12 @@ class file_widget initfile =
          self#set_history {l = (f, desc) :: hist.l; r = []}
 
       method undo_name =
-         try Some (List.hd hist.l |> snd)
-         with _ -> None
+         try List.hd hist.l |> snd
+         with _ -> failwith "no undo items"
 
       method redo_name =
-         try Some (List.hd hist.r |> snd)
-         with _ -> None
+         try List.hd hist.r |> snd
+         with _ -> failwith "no redo items"
 
       method undo =
          try self#set_history (shift_left hist)

@@ -1,4 +1,5 @@
 open Batteries
+open GtkBase
 open React
 
 (** A simple, coercible widget *)
@@ -204,16 +205,19 @@ class ['a] tnotebook =
     initializer
       let callback i =
         let page =
-          try Some (self#get_tpage i |> coerce)
+          try Some (self#get_tpage i)
           with _ -> None
         in
-        update_page page
+        Option.map coerce page |> update_page
       in
       ntb#connect#switch_page ~callback |> ignore
   end
 
-let tnotebook ?g () =
+let tnotebook ?g ?callback () =
   let n = new tnotebook in
+  Option.may (fun c ->
+    attach_value (S.map c n#tpage_signal) (coerce n)
+  ) callback;
   setg g n;
   coerce n
 
@@ -245,8 +249,19 @@ let menu ?g ?gm label ?modi items =
     item
   )
 
-let menuitem ?g label ?modi ?key callback =
-  let item = GMenu.menu_item ~label () in
+let dynmenuitem ?g s ?modi ?key callback =
+  let action =
+    let id = ref 0 in
+    let name = "action" ^ (string_of_int !id) in
+    id := !id + 1;
+    GAction.action ~name ()
+  in
+  let item = GMenu.menu_item () in
+  action#connect_proxy item#coerce;
+  attach_value (S.trace (fun (l, e) ->
+    action#set_label l;
+    action#set_sensitive e
+  ) s) item;
   let _ = item#connect#activate callback in
   setg g item;
   fun ag modi' -> (
@@ -256,5 +271,8 @@ let menuitem ?g label ?modi ?key callback =
     ) key;
     item
   )
+
+let menuitem ?g label ?modi ?key callback =
+  dynmenuitem ?g (S.const (label, true)) ?modi ?key callback
 
 (* vim: set ts=2 sw=2 tw=80 : *)

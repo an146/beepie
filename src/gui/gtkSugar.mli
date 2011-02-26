@@ -107,6 +107,7 @@ class ['a] tnotebook :
 
 val tnotebook :
   ?g:('a tnotebook) Global.t ->
+  ?callback:('a option -> unit) ->
   unit ->
   widget
 
@@ -138,6 +139,14 @@ val menu :
 val menuitem :
   ?g:GMenu.menu_item Global.t ->
   string ->
+  ?modi:Gdk.Tags.modifier list ->
+  ?key:Gdk.keysym ->
+  (unit -> unit) ->
+  menu_entry
+
+val dynmenuitem :
+  ?g:GMenu.menu_item Global.t ->
+  (string * bool) React.S.t ->
   ?modi:Gdk.Tags.modifier list ->
   ?key:Gdk.keysym ->
   (unit -> unit) ->
