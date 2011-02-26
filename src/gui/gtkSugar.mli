@@ -7,7 +7,14 @@ type window = GWindow.window
 (** Cast widget widgets to Gtk.widget Gtk.obj values *)
 val to_gtk_widget : widget -> Gtk.widget Gtk.obj
 
-val coerce : < coerce : 'a; .. > -> 'a
+class pseudo_widget :
+  widget ->
+  object
+    method coerce : widget
+    method get_oid : int
+  end
+
+val coerce : #pseudo_widget -> widget
 
 val attach_value : 'a -> #GObj.widget -> unit
 
@@ -81,13 +88,6 @@ val combo_box_text :
   ?callbacks:(string option -> unit) list ->
   string list -> widget
 
-class pseudo_widget :
-  widget ->
-  object
-    method coerce : widget
-    method get_oid : int
-  end
-
 val notebook :
   ?g:GPack.notebook Global.t ->
   widget list -> widget
@@ -100,8 +100,9 @@ class ['a] tnotebook :
     method append_tpage : ?activate:bool -> 'a -> unit
     method coerce : widget
     method current_tpage : 'a
-    method get_tpage : widget -> 'a
+    method get_tpage : int -> 'a
     method notebook : GPack.notebook
+    method tpage_signal : 'a option React.S.t
   end
 
 val tnotebook :

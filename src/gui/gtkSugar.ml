@@ -7,8 +7,14 @@ type widget = GObj.widget
 (** A basic Gtk+ window type *)
 type window = GWindow.window
 
+class pseudo_widget (w : widget) =
+  object
+    method coerce = w
+    method get_oid = w#get_oid
+  end
+
 (** Cast everything to a simple widget form *)
-let coerce w = w#coerce
+let coerce (w : #pseudo_widget) = w#coerce
 
 (** Convert a widget to a Gtk+ widget *)
 let to_gtk_widget w = GObj.as_widget w
@@ -163,12 +169,6 @@ let combo_box_text ?callbacks strings =
   ) callbacks;
   coerce combo
 
-class pseudo_widget (w : widget) =
-  object
-    method coerce = w
-    method get_oid = w#get_oid
-  end
-
 let notebook ?g pages =
   let n = GPack.notebook () in
   let add_page p = p |> n#append_page |> ignore in
@@ -177,26 +177,39 @@ let notebook ?g pages =
   coerce n
 
 class ['a] tnotebook =
-  let notebook = GPack.notebook () in
+  let ntb = GPack.notebook () in
+  let page_s, update_page = S.create ~eq:(==) (None : widget option) in
   object (self)
     constraint 'a = #pseudo_widget
-    inherit pseudo_widget notebook#coerce
+    inherit pseudo_widget ntb#coerce
 
     val pages = new GUtil.memo ()
-    method notebook = notebook
+
+    method notebook = ntb
 
     method append_tpage ?(activate = false) (p : 'a) =
-      let i = notebook#append_page p#coerce in
+      let i = ntb#append_page p#coerce in
       if activate then
-        notebook#goto_page i;
+        ntb#goto_page i;
       pages#add p
 
-    method get_tpage w =
-      try pages#find w
-      with Not_found -> failwith "page not found"
+    method get_tpage i =
+      try pages#find (ntb#get_nth_page i)
+      with _ -> failwith "page not found"
 
-    method current_tpage =
-      notebook#current_page |> notebook#get_nth_page |> self#get_tpage
+    method current_tpage = ntb#current_page |> self#get_tpage
+
+    method tpage_signal = S.map (Option.map pages#find) page_s
+
+    initializer
+      let callback i =
+        let page =
+          try Some (self#get_tpage i |> coerce)
+          with _ -> None
+        in
+        update_page page
+      in
+      ntb#connect#switch_page ~callback |> ignore
   end
 
 let tnotebook ?g () =

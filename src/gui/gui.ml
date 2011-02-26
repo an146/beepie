@@ -86,6 +86,8 @@ let create_main_window () =
                item "Save as..." ~modi:_C_S ~key:_S m_file_saveas;
                item "Quit"                  ~key:_Q GMain.Main.quit;
             ];
+            menu "Edit" [
+            ];
             menu "Settings" [
                menu ~gm:output_device "Output device" [];
                item "Refresh devices" m_refresh_devices;
