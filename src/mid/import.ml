@@ -77,9 +77,10 @@ let import_events ?(division = 240) events =
             notes.(channel).(midipitch) <- None
    in
    let ctrl c t time v =
-      if Ctrl.is_supported t then
+      if Ctrl.is_supported t then (
          let map = File.ctrl_map (c, t) !file |> CtrlMap.set time v in
-         file := File.set_ctrl_map (c, t) map !file
+         file := File.set_ctrl_map (c, t) map !file;
+      );
    in
    let unhandled = ref 0 in
    let first_track_used = ref false in
@@ -118,6 +119,7 @@ let import_events ?(division = 240) events =
    let head_track = File.track 0 !file in
    if Track.is_empty head_track then
       file := File.remove_track 0 !file;
+   file := File.reset_tvalues !file;
    !file
 
 let import_events ?division t =

@@ -1,6 +1,8 @@
 open Batteries
 open GtkSugar
 open React
+module File = MidiFile
+module Track = MidiTrack
 
 class file_widget initfile =
    let tracks_table = GPack.table () in
@@ -10,7 +12,7 @@ class file_widget initfile =
       `expand, vbox [];
    ] in
    let tracks_table_rows = Stack.create () in
-   let file_signal, set_file = S.create ~eq:(==) initfile in
+   let file_s, set_file = S.create ~eq:(==) initfile in
    let tracks_updater =
       let up n =
          while Stack.length tracks_table_rows > n do
@@ -32,6 +34,9 @@ class file_widget initfile =
             in
             let btn = button ~relief:`NONE in
             let sep () = `fill, separator `VERTICAL in
+
+            let track_s = S.map (File.track i) file_s in
+            let volume_s = S.map (Track.tvalue Ctrl.volume |- float_of_int) track_s in
             let row = [
                `fill,   btn (string_of_int (i + 1));
                sep ();
@@ -43,21 +48,22 @@ class file_widget initfile =
                sep ();
                `expand, btn "Instr";
                sep ();
-               `expand, slider ~init:0.0 ~step_incr:1.0 ~page_incr:7.0
-                              `HORIZONTAL (0.0, 127.0);
+               `expand, slider ~init:0.0 ~signal:volume_s
+                               ~step_incr:1.0 ~page_incr:7.0
+                               `HORIZONTAL (0.0, 127.0);
             ] in
             List.iteri attach row;
             Stack.push (List.map snd row) tracks_table_rows;
          done
       in
-      S.map up (S.map MidiFile.tracks_count file_signal)
+      S.map up (S.map File.tracks_count file_s)
    in
    object (self)
       inherit pseudo_widget box#coerce
 
       val tracks_updater = tracks_updater
-      method file = S.value file_signal
-      method file_signal = file_signal
+      method file = S.value file_s
+      method file_signal = file_s
       method set_file f = set_file f
    end
 

@@ -62,18 +62,20 @@ let is_supported ctrltype =
    ] in
    not (List.mem ctrltype unsupported);;
 
-let check_supported ctrltype =
-   if is_supported ctrltype then
-      ctrltype
-   else
-      raise Unsupported
-
 let all_supported =
    let controllers = (0 -- 127) /@ (fun i -> Controller i) // is_supported in
    Program :: PitchWheel :: (List.of_enum controllers)
 
 let all_supported_c =
    List.cartesian_product (List.of_enum (0 -- 15)) all_supported
+
+let tvalues = [
+   program;
+   volume;
+   balance;
+]
+
+let is_tvalue t = List.mem t tvalues
 
 (* vim: set ts=3 sw=3 tw=80 : *)
 

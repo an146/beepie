@@ -15,6 +15,10 @@ let to_gtk_widget w = GObj.as_widget w
 
 let setg g w = Option.may (fun g -> Global.set g w) g
 
+(** Attach value to widget, keeping it from garbage collection *)
+let attach v w =
+  w#connect#destroy ~callback:(fun () -> ignore v) |> ignore
+
 (** The base Gtk+ window *)
 let window ?g ?accel ?callbacks ~title entry =
   let w = GWindow.window ~title () in
@@ -126,26 +130,21 @@ let scrolled_window width height child =
 
 (** Slider *)
 let slider ?callbacks ?signal ?init ?step_incr ?page_incr orientation (lower, upper) =
-  let s = GRange.scale `HORIZONTAL ~draw_value:false () in
-  s#adjustment#set_bounds ~lower ~upper ?step_incr ?page_incr ();
-  (* Create a signal which tracks changes in the slider *)
-  let signal, send =
-    (* Default to the lowest value if not initializing value is provided. *)
-    let init = Option.default lower init in
-    let signal, send = S.create init in
-    let signal = S.trace s#adjustment#set_value signal in
-    signal, send
-  in
-  (* Make sure the slider and the signal stay synchronized *)
-  let _ = s#connect#value_changed (fun () -> send s#adjustment#value) in
+  let sl = GRange.scale `HORIZONTAL ~draw_value:false () in
+  sl#adjustment#set_bounds ~lower ~upper ?step_incr ?page_incr ();
+  Option.may sl#adjustment#set_value init;
+  Option.may (fun s ->
+    let s = S.trace sl#adjustment#set_value s in
+    attach s sl
+  ) signal;
   Option.may (
     fun callbacks ->
       List.iter (
         fun callback ->
-          ignore (s#connect#value_changed (fun () -> callback s))
+          ignore (sl#connect#value_changed (fun () -> callback sl))
       ) callbacks;
   ) callbacks;
-  coerce s
+  coerce sl
 
 (** Text combo-box *)
 let combo_box_text ?callbacks strings =

@@ -19,5 +19,9 @@ val set_timesig_map : TimeSig.t CtrlMap.t -> t -> t
 val tracks_count : t -> int
 val tracks : t -> MidiTrack.t Enum.t
 val track : int -> t -> MidiTrack.t
+val get_note_ctrl : (int * note) -> Ctrl.t -> t -> int
+
+(* Internal *)
+val reset_tvalues : t -> t
 
 (* vim: set ts=3 sw=3 tw=80 : *)

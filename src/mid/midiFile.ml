@@ -75,4 +75,22 @@ let set_tempo_map tempo_map f = {f with tempo_map}
 let timesig_map {timesig_map} = timesig_map
 let set_timesig_map timesig_map f = {f with timesig_map}
 
+let get_note_ctrl (chan, note) ct f =
+   let cm = ctrl_map (chan, ct) f in
+   CtrlMap.get note.on_time cm
+
+let reset_tvalues f =
+   let do_reset track =
+      try
+         let note = Track.choose_note track in
+         let tvalues =
+            Ctrl.tvalues |> List.enum |> Enum.map (fun ct ->
+               ct, get_note_ctrl note ct f
+            ) |> PMap.of_enum
+         in
+         Track.reset_tvalues tvalues track
+      with _ -> track
+   in
+   {f with tracks = List.map do_reset f.tracks}
+
 (* vim: set ts=3 sw=3 tw=80 : *)
