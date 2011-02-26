@@ -9,6 +9,8 @@ val to_gtk_widget : widget -> Gtk.widget Gtk.obj
 
 val coerce : < coerce : 'a; .. > -> 'a
 
+val attach_value : 'a -> #GObj.widget -> unit
+
 (** Create a GUI window, containing one widget.  When the window is closed it
     will automatically end the GUI loop. *)
 val window :

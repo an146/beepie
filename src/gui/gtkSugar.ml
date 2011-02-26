@@ -16,8 +16,8 @@ let to_gtk_widget w = GObj.as_widget w
 let setg g w = Option.may (fun g -> Global.set g w) g
 
 (** Attach value to widget, keeping it from garbage collection *)
-let attach v w =
-  w#connect#destroy ~callback:(fun () -> ignore v) |> ignore
+let attach_value v (w : #GObj.widget) =
+  w#misc#connect#destroy ~callback:(fun () -> ignore v) |> ignore
 
 (** The base Gtk+ window *)
 let window ?g ?accel ?callbacks ~title entry =
@@ -135,7 +135,7 @@ let slider ?callbacks ?signal ?init ?step_incr ?page_incr orientation (lower, up
   Option.may sl#adjustment#set_value init;
   Option.may (fun s ->
     let s = S.trace sl#adjustment#set_value s in
-    attach s sl
+    attach_value s sl
   ) signal;
   Option.may (
     fun callbacks ->

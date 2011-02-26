@@ -14,7 +14,7 @@ class file_widget initfile =
    ] in
    let tracks_table_rows = Stack.create () in
    let file_s, set_file = S.create ~eq:(==) initfile in
-   let tracks_updater =
+   let _ =
       let up n =
          while Stack.length tracks_table_rows > n do
             Stack.pop tracks_table_rows |> List.iter (fun w -> w#destroy ())
@@ -59,12 +59,11 @@ class file_widget initfile =
             Stack.push (List.map snd row) tracks_table_rows;
          done
       in
-      S.map up (S.map File.tracks_count file_s)
+      attach_value (S.map up (S.map File.tracks_count file_s)) tracks_table
    in
    object (self)
       inherit pseudo_widget box#coerce
 
-      val tracks_updater = tracks_updater
       method file = S.value file_s
       method file_signal = file_s
       method set_file f = set_file f
