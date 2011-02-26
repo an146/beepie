@@ -1,4 +1,5 @@
 open Batteries
+open GtkBase
 open GtkSugar
 open React
 module File = MidiFile
@@ -22,7 +23,7 @@ class file_widget initfile =
          if n > 0 then tracks_table#set_rows n;
          for i = oldrows to n - 1 do
             let attach j (exp, w) =
-               Gobject.Property.set w#as_widget GtkBase.Widget.P.can_focus false;
+               Gobject.Property.set w#as_widget Widget.P.can_focus false;
                let expand =
                   match exp with
                   | `fill -> `NONE
@@ -36,7 +37,9 @@ class file_widget initfile =
             let sep () = `fill, separator `VERTICAL in
 
             let track_s = S.map (File.track i) file_s in
-            let volume_s = S.map (Track.tvalue Ctrl.volume |- float_of_int) track_s in
+            let volume_s =
+               S.map (Track.tvalue Ctrl.volume |- float_of_int) track_s
+            in
             let row = [
                `fill,   btn (string_of_int (i + 1));
                sep ();
@@ -48,7 +51,7 @@ class file_widget initfile =
                sep ();
                `expand, btn "Instr";
                sep ();
-               `expand, slider ~init:0.0 ~signal:volume_s
+               `expand, slider ~signal:volume_s
                                ~step_incr:1.0 ~page_incr:7.0
                                `HORIZONTAL (0.0, 127.0);
             ] in
