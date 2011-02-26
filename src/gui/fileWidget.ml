@@ -5,6 +5,21 @@ open React
 module File = MidiFile
 module Track = MidiTrack
 
+type hist_zipper = {
+   l : (File.t * string) list;
+   r : (File.t * string) list;
+}
+
+let shift_left h =
+   match h with
+   | {l = e :: l; r} -> {l; r = e :: r}
+   | _ -> raise (Invalid_argument "shift_left")
+
+let shift_right h =
+   match h with
+   | {l; r = e :: r} -> {l = e :: l; r}
+   | _ -> raise (Invalid_argument "shift_right")
+
 class file_widget initfile =
    let tracks_table = GPack.table () in
    let box = vbox [
@@ -64,9 +79,35 @@ class file_widget initfile =
    object (self)
       inherit pseudo_widget box#coerce
 
+      (* zipper, actually *)
+      val mutable hist = { l = []; r = []; }
+
       method file = S.value file_s
       method file_signal = file_s
-      method set_file f = set_file f
+
+      method set_history h =
+         hist <- h;
+         let f = try fst (List.hd hist.l) with _ -> initfile in
+         set_file f
+
+      method commit f desc =
+         self#set_history {l = (f, desc) :: hist.l; r = []}
+
+      method undo_name =
+         try Some (List.hd hist.l |> snd)
+         with _ -> None
+
+      method redo_name =
+         try Some (List.hd hist.r |> snd)
+         with _ -> None
+
+      method undo =
+         try self#set_history (shift_left hist)
+         with _ -> failwith "nothing to undo"
+
+      method redo =
+         try self#set_history (shift_right hist)
+         with _ -> failwith "nothing to redo"
    end
 
 let file_widget = new file_widget
