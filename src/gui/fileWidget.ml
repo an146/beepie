@@ -27,6 +27,8 @@ class file_widget initfile =
       method history_signal = hist_s
 
       method commit desc f =
+         (*if Player.file () == self#file then
+            failwith "can't commit while playing";*)
          match self#history with
          (l, r) -> set_hist ((f, desc) :: l, [])
 

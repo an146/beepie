@@ -81,13 +81,13 @@ let create_main_window () =
    in
    let accel = GtkData.AccelGroup.create () in
    let _C_S = [`CONTROL; `SHIFT] in
-   let wfile_s, update_wfile = S.create ~eq:(==) None in
+   let wfile_e, update_wfile = E.create () in
    let hist_s =
-      S.changes wfile_s |> E.map (fun wf' ->
+      E.map (fun wf' ->
          match wf' with
          | Some wf -> wf#history_signal
          | None -> S.const ([], [])
-      ) |> S.switch ~eq:(==) (S.const ([], []))
+      ) wfile_e |> S.switch ~eq:(==) (S.const ([], []))
    in
    let undo_s = hist_s |> S.map (function
       | (_, desc) :: _, _ -> "Undo " ^ desc, true
@@ -109,6 +109,7 @@ let create_main_window () =
             menu "Edit" [
                dynitem undo_s               ~key:_Z (fun () -> (wfile ())#undo);
                dynitem redo_s               ~key:_Y (fun () -> (wfile ())#redo);
+               item "Play" (fun () -> Player.play (file ()));
             ];
             menu "Settings" [
                menu ~gm:output_device "Output device" [];
@@ -122,6 +123,7 @@ let create_main_window () =
    ) |> ignore;
    let files = Array.enum Sys.argv |> Enum.skip 1 in
    Enum.iter (Import.import_file |- add_file) files;
+   Glib.Idle.add (fun () -> Thread.yield (); true) |> ignore;
    m_refresh_devices ()
 
 let main () =

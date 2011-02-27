@@ -121,4 +121,9 @@ let write ?running_status out cmd =
    | #meta_t as cmd ->
          write_meta ~running_status out cmd
 
+let to_string cmd =
+   let out = output_string () in
+   write out cmd;
+   close_out out
+
 (* vim: set ts=3 sw=3 tw=80 : *)

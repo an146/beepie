@@ -11,6 +11,7 @@ OCAMLPACKS[] +=
 CFLAGS += -I $(shell ocamlc -where)
 OCAMLFLAGS += -thread
 OCAMLDEPFLAGS +=
+OCAML_LINK_FLAGS += -thread
 
 BINDINGS = alsa
 BINDINGS_LINK_FLAGS = -cclib -lasound
