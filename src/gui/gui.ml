@@ -120,6 +120,8 @@ let create_main_window () =
          `fill, statusbar ~g:g_statusbar ();
       ]
    ) |> ignore;
+   let files = Array.enum Sys.argv |> Enum.skip 1 in
+   Enum.iter (Import.import_file |- add_file) files;
    m_refresh_devices ()
 
 let main () =
