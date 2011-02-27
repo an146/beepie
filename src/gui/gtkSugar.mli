@@ -16,7 +16,7 @@ class pseudo_widget :
 
 val coerce : #pseudo_widget -> widget
 
-val attach_value : 'a -> #GObj.widget -> unit
+val attach_signal : 'a React.S.t -> #GObj.widget -> unit
 
 (** Create a GUI window, containing one widget.  When the window is closed it
     will automatically end the GUI loop. *)
@@ -76,7 +76,7 @@ val scrolled_window :
 (** Slider widget for adjusting a value.  If [signal] is provided then the
     value of that signal will follow the slider's value.  *)
 val slider :
-  ?callbacks:(GRange.scale -> unit) list ->
+  ?callback:(float -> unit) ->
   ?signal:float React.S.t ->
   ?init:float ->
   ?step_incr:float ->

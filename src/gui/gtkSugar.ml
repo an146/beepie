@@ -23,7 +23,7 @@ let to_gtk_widget w = GObj.as_widget w
 let setg g w = Option.may (fun g -> Global.set g w) g
 
 (** Attach value to widget, keeping it from garbage collection *)
-let attach_value v (w : #GObj.widget) =
+let attach_signal v (w : #GObj.widget) =
   w#misc#connect#destroy ~callback:(fun () -> ignore v) |> ignore
 
 (** The base Gtk+ window *)
@@ -136,21 +136,17 @@ let scrolled_window width height child =
   coerce sw
 
 (** Slider *)
-let slider ?callbacks ?signal ?init ?step_incr ?page_incr orientation (lower, upper) =
+let slider ?callback ?signal ?init ?step_incr ?page_incr orientation (lower, upper) =
   let sl = GRange.scale `HORIZONTAL ~draw_value:false () in
   sl#adjustment#set_bounds ~lower ~upper ?step_incr ?page_incr ();
   Option.may sl#adjustment#set_value init;
   Option.may (fun s ->
     let s = S.trace sl#adjustment#set_value s in
-    attach_value s sl
+    attach_signal s sl
   ) signal;
-  Option.may (
-    fun callbacks ->
-      List.iter (
-        fun callback ->
-          ignore (sl#connect#value_changed (fun () -> callback sl))
-      ) callbacks;
-  ) callbacks;
+  Option.may (fun clb ->
+    ignore (sl#connect#value_changed (fun () -> clb sl#adjustment#value))
+  ) callback;
   coerce sl
 
 (** Text combo-box *)
@@ -189,10 +185,10 @@ class ['a] tnotebook =
     method notebook = ntb
 
     method append_tpage ?(activate = false) (p : 'a) =
+      pages#add p;
       let i = ntb#append_page p#coerce in
       if activate then
         ntb#goto_page i;
-      pages#add p
 
     method get_tpage i =
       try pages#find (ntb#get_nth_page i)
@@ -205,8 +201,8 @@ class ['a] tnotebook =
     initializer
       let callback i =
         let page =
-          try Some (self#get_tpage i)
-          with _ -> None
+          if i >= 0 then Some (self#get_tpage i)
+          else None
         in
         Option.map coerce page |> update_page
       in
@@ -216,7 +212,7 @@ class ['a] tnotebook =
 let tnotebook ?g ?callback () =
   let n = new tnotebook in
   Option.may (fun c ->
-    attach_value (S.map c n#tpage_signal) (coerce n)
+    attach_signal (S.map c n#tpage_signal) (coerce n)
   ) callback;
   setg g n;
   coerce n
@@ -258,7 +254,7 @@ let dynmenuitem ?g s ?modi ?key callback =
   in
   let item = GMenu.menu_item () in
   action#connect_proxy item#coerce;
-  attach_value (S.trace (fun (l, e) ->
+  attach_signal (S.trace (fun (l, e) ->
     action#set_label l;
     action#set_sensitive e
   ) s) item;

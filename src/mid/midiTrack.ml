@@ -43,12 +43,18 @@ let owns c {channel_usage} =
 
 let enum {notes} = PSet.enum notes
 
-let tvalue t {tvalues} = PMap.find t tvalues
-
 let choose_note {notes} =
    try PSet.choose notes
    with _ -> raise Not_found
 
+let tvalue t {tvalues} = PMap.find t tvalues
+
+let set_tvalue t v track =
+   let tvalues = PMap.add t v track.tvalues in
+   {track with tvalues}
+
+let set_volume v track =
+   set_tvalue Ctrl.volume v track
 let reset_tvalues tvalues track = {track with tvalues}
 
 (* vim: set ts=3 sw=3 tw=80 : *)

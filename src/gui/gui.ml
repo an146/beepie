@@ -81,13 +81,20 @@ let create_main_window () =
    in
    let accel = GtkData.AccelGroup.create () in
    let _C_S = [`CONTROL; `SHIFT] in
-   let file_s, update_file = S.create ~eq:(==) None in
-   let undo_s = file_s |> S.map (fun f ->
-      try "Undo " ^ (Option.get f)#undo_name, true
-      with _ -> "Undo", false
-   ) and redo_s = file_s |> S.map (fun f ->
-      try "Redo " ^ (Option.get f)#redo_name, true
-      with _ -> "Redo", false
+   let wfile_s, update_wfile = S.create ~eq:(==) None in
+   let hist_s =
+      S.changes wfile_s |> E.map (fun wf' ->
+         match wf' with
+         | Some wf -> wf#history_signal
+         | None -> S.const ([], [])
+      ) |> S.switch ~eq:(==) (S.const ([], []))
+   in
+   let undo_s = hist_s |> S.map (function
+      | (_, desc) :: _, _ -> "Undo " ^ desc, true
+      | _ -> "Undo", false
+   ) and redo_s = hist_s |> S.map (function
+      | _, (_, desc) :: _ -> "Redo " ^ desc, true
+      | _ -> "Redo", false
    ) in
    window ~g:g_window ~accel ~title:"GtkSugar Test" (
       vbox [
@@ -109,7 +116,7 @@ let create_main_window () =
                item "Test sound" (fun () -> MidiIo.output_note 0 60 1.0);
             ];
          ];
-         `expand, tnotebook ~g:files ~callback:update_file ();
+         `expand, tnotebook ~g:files ~callback:update_wfile ();
          `fill, statusbar ~g:g_statusbar ();
       ]
    ) |> ignore;

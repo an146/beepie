@@ -7,6 +7,7 @@ val create : int -> t
 val division : t -> int
 val add_track : t -> t
 val remove_track : int -> t -> t
+val map_track : int -> (MidiTrack.t -> MidiTrack.t) -> t -> t
 val add_note : ?channel:int -> int -> note -> t -> t
 val channel_owner : int -> t -> int option
 val ctrl_map : (int * Ctrl.t) -> t -> int CtrlMap.t

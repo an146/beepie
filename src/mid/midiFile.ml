@@ -41,15 +41,19 @@ let remove_track i f =
    DynArray.delete tracks i;
    set_tracks (DynArray.enum tracks) f
 
+let map_ith i f = List.mapi (fun j elt -> if i = j then f elt else elt)
+
+let map_track i fn f =
+   let tracks = map_ith i fn f.tracks in
+   {f with tracks}
+
 let add_note ?channel t note f =
    let c =
       match channel with
       | Some c -> c
       | None -> assert false
    in
-   let map_ith i f = List.mapi (fun j elt -> if i = j then f elt else elt) in
-   let tracks = map_ith t (Track.add_note note c) f.tracks in
-   {f with tracks}
+   map_track t (Track.add_note note c) f
 
 let channel_owner c f =
    let tracks = tracks f |> Array.of_enum in
