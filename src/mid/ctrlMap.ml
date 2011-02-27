@@ -55,4 +55,6 @@ let enum ctrlmap = PMap.enum ctrlmap.map;;
 
 let bindings ctrlmap = ctrlmap |> enum |> List.of_enum;;
 
+let clear ctrlmap = {ctrlmap with map = PMap.empty}
+let reset v ctrlmap = ctrlmap |> clear |> set 0 v
 (* vim: set ts=3 sw=3 tw=80 : *)

@@ -49,13 +49,14 @@ let choose_note {notes} =
 
 let tvalue t {tvalues} = PMap.find t tvalues
 
-let set_tvalue t v track =
-   let tvalues = PMap.add t v track.tvalues in
-   {track with tvalues}
-
 let volume track = tvalue Ctrl.volume track
 
-let set_volume v track = set_tvalue Ctrl.volume v track
+let channels {channel_usage = cu} =
+   List.enum cu // (fun (_, n) -> n > 0) /@ fst
+
+let reset_tvalue t v track =
+   let tvalues = PMap.add t v track.tvalues in
+   {track with tvalues}
 
 let reset_tvalues tvalues track = {track with tvalues}
 

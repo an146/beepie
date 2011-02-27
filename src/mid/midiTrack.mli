@@ -10,11 +10,11 @@ val owns : int -> t -> bool
 val enum : t -> (int * note) Enum.t
 val choose_note : t -> (int * note)
 val tvalue : Ctrl.t -> t -> int
-val set_tvalue : Ctrl.t -> int -> t -> t
 val volume : t -> int
-val set_volume : int -> t -> t
+val channels : t -> int Enum.t
 
 (* Internal *)
+val reset_tvalue : Ctrl.t -> int -> t -> t
 val reset_tvalues : (Ctrl.t, int) PMap.t -> t -> t
 
 (* vim: set ts=3 sw=3 tw=80 : *)

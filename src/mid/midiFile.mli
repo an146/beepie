@@ -16,6 +16,9 @@ val tempo_map : t -> int CtrlMap.t
 val set_tempo_map : int CtrlMap.t -> t -> t
 val timesig_map : t -> TimeSig.t CtrlMap.t
 val set_timesig_map : TimeSig.t CtrlMap.t -> t -> t
+val tvalue : (int * Ctrl.t) -> t -> int
+val set_tvalue : (int * Ctrl.t) -> int -> t -> t
+val set_volume : int -> int -> t -> t
 (* val enum_notes : ?track:int -> t -> (int * note) Enum.t *)
 val tracks_count : t -> int
 val tracks : t -> MidiTrack.t Enum.t

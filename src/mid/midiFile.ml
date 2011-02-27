@@ -79,6 +79,19 @@ let set_tempo_map tempo_map f = {f with tempo_map}
 let timesig_map {timesig_map} = timesig_map
 let set_timesig_map timesig_map f = {f with timesig_map}
 
+let tvalue (tn, ct) f =
+   track tn f |> Track.tvalue ct
+
+let set_tvalue (tn, ct) v f =
+   let f = map_track tn (Track.reset_tvalue ct v) f in
+   let fix_channel f c =
+      let ctrl_maps = f.ctrl_maps |> PMap.modify (c, ct) (CtrlMap.reset v) in
+      {f with ctrl_maps}
+   in
+   Track.channels (track tn f) |> Enum.fold fix_channel f
+
+let set_volume tn v f = set_tvalue (tn, Ctrl.volume) v f
+
 let get_note_ctrl (chan, note) ct f =
    let cm = ctrl_map (chan, ct) f in
    CtrlMap.get note.on_time cm

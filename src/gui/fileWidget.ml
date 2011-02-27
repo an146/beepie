@@ -26,9 +26,12 @@ class file_widget initfile =
       method history = S.value hist_s
       method history_signal = hist_s
 
-      method commit f desc =
+      method commit desc f =
          match self#history with
          (l, r) -> set_hist ((f, desc) :: l, [])
+
+      method commit_map desc fn =
+         self#commit desc (fn self#file)
 
       method undo =
          match self#history with
@@ -64,12 +67,12 @@ class file_widget initfile =
 
                let track_s = S.map ~eq:(==) (File.track i) file_s in
                let volume_s = S.map (Track.tvalue Ctrl.volume) track_s in
-               let map_track desc fn =
+               (*let map_track desc fn =
                   self#commit (File.map_track i fn self#file) desc
-               in
+               in*)
                let set_volume v =
                   if Track.volume (S.value track_s) != v then
-                     map_track "Set Volume" (Track.set_volume v)
+                     self#commit_map "Set Volume" (File.set_volume i v)
                in
                let row = [
                   `fill,   btn (string_of_int (i + 1));
