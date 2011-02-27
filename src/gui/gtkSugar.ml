@@ -1,4 +1,5 @@
 open Batteries
+open Glib
 open GtkBase
 open React
 
@@ -136,17 +137,23 @@ let scrolled_window width height child =
   coerce sw
 
 (** Slider *)
-let slider ?callback ?signal ?init ?step_incr ?page_incr orientation (lower, upper) =
+let slider ?callback ?signal ?init ?step_incr ?page_incr
+           ?update_policy orientation (lower, upper) =
   let sl = GRange.scale `HORIZONTAL ~draw_value:false () in
+  let init = Option.default lower init in
+  let init = Option.map_default S.value init signal in
   sl#adjustment#set_bounds ~lower ~upper ?step_incr ?page_incr ();
-  Option.may sl#adjustment#set_value init;
+  sl#adjustment#set_value init;
   Option.may (fun s ->
     let s = S.trace sl#adjustment#set_value s in
     attach_signal s sl
   ) signal;
   Option.may (fun clb ->
-    ignore (sl#connect#value_changed (fun () -> clb sl#adjustment#value))
+    sl#connect#value_changed (fun _ ->
+      Idle.add (fun () -> clb sl#adjustment#value; false) |> ignore
+    ) |> ignore
   ) callback;
+  Option.may sl#set_update_policy update_policy;
   coerce sl
 
 (** Text combo-box *)

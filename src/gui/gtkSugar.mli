@@ -81,6 +81,7 @@ val slider :
   ?init:float ->
   ?step_incr:float ->
   ?page_incr:float ->
+  ?update_policy:Gtk.Tags.update_type ->
   Gtk.Tags.orientation -> (float * float) -> widget
 
 (** Text-only combo box *)

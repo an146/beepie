@@ -11,6 +11,7 @@ val enum : t -> (int * note) Enum.t
 val choose_note : t -> (int * note)
 val tvalue : Ctrl.t -> t -> int
 val set_tvalue : Ctrl.t -> int -> t -> t
+val volume : t -> int
 val set_volume : int -> t -> t
 
 (* Internal *)

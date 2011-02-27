@@ -63,14 +63,13 @@ class file_widget initfile =
                let sep () = `fill, separator `VERTICAL in
 
                let track_s = S.map ~eq:(==) (File.track i) file_s in
-               let volume_s =
-                  S.map (Track.tvalue Ctrl.volume |- float_of_int) track_s
-               in
+               let volume_s = S.map (Track.tvalue Ctrl.volume) track_s in
                let map_track desc fn =
                   self#commit (File.map_track i fn self#file) desc
                in
                let set_volume v =
-                  int_of_float v |> Track.set_volume |> map_track "Set Volume"
+                  if Track.volume (S.value track_s) != v then
+                     map_track "Set Volume" (Track.set_volume v)
                in
                let row = [
                   `fill,   btn (string_of_int (i + 1));
@@ -83,9 +82,10 @@ class file_widget initfile =
                   sep ();
                   `expand, btn "Instr";
                   sep ();
-                  `expand, slider ~signal:volume_s
-                                  ~callback:set_volume
+                  `expand, slider ~signal:(S.map float_of_int volume_s)
+                                  ~callback:(int_of_float |- set_volume)
                                   ~step_incr:1.0 ~page_incr:7.0
+                                  ~update_policy:`DISCONTINUOUS
                                   `HORIZONTAL (0.0, 127.0);
                ] in
                List.iteri attach row;
