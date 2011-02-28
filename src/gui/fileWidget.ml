@@ -89,8 +89,8 @@ class file_widget initfile =
                   sep ();
                   `expand, slider ~signal:(S.map float_of_int volume_s)
                                   ~callback:(int_of_float |- set_volume)
+                                  ~move_callback:(Printf.printf "move: %f\n%!")
                                   ~step_incr:1.0 ~page_incr:7.0
-                                  ~update_policy:`DISCONTINUOUS
                                   `HORIZONTAL (0.0, 127.0);
                ] in
                List.iteri attach row;

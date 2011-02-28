@@ -137,8 +137,8 @@ let scrolled_window width height child =
   coerce sw
 
 (** Slider *)
-let slider ?callback ?signal ?init ?step_incr ?page_incr
-           ?update_policy orientation (lower, upper) =
+let slider ?callback ?move_callback ?signal ?init ?step_incr ?page_incr
+           orientation (lower, upper) =
   let sl = GRange.scale `HORIZONTAL ~draw_value:false () in
   let init = Option.default lower init in
   let init = Option.map_default S.value init signal in
@@ -149,11 +149,16 @@ let slider ?callback ?signal ?init ?step_incr ?page_incr
     attach_signal s sl
   ) signal;
   Option.may (fun clb ->
-    sl#connect#value_changed (fun _ ->
+    sl#connect#value_changed (fun () ->
       Idle.add (fun () -> clb sl#adjustment#value; false) |> ignore
     ) |> ignore
   ) callback;
-  Option.may sl#set_update_policy update_policy;
+  Option.may (fun clb ->
+    sl#connect#change_value (fun _ _ ->
+      Idle.add (fun () -> clb sl#adjustment#value; false) |> ignore
+    ) |> ignore
+  ) move_callback;
+  sl#set_update_policy `DISCONTINUOUS;
   coerce sl
 
 (** Text combo-box *)

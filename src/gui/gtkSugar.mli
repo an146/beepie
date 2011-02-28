@@ -77,11 +77,11 @@ val scrolled_window :
     value of that signal will follow the slider's value.  *)
 val slider :
   ?callback:(float -> unit) ->
+  ?move_callback:(float -> unit) ->
   ?signal:float React.S.t ->
   ?init:float ->
   ?step_incr:float ->
   ?page_incr:float ->
-  ?update_policy:Gtk.Tags.update_type ->
   Gtk.Tags.orientation -> (float * float) -> widget
 
 (** Text-only combo box *)
