@@ -1,5 +1,6 @@
 open Batteries
 open MidiAsm
+open React
 module File = MidiFile
 
 let miditime_of_time t tempo d =
@@ -40,26 +41,32 @@ let process () =
 
 let file () = Option.map (fun {file} -> file) !ctx
 
+let file_signal, update_file = S.create ~eq:(==) None
+
 let reset_output () =
    for i = 0 to 15 do
       program i 0 |> MidiCmd.to_string |> MidiIo.output;
       ctrl2 i Ctrl.all_controllers_off 0 |> MidiCmd.to_string |> MidiIo.output
    done
 
+let set_ctx ctx' =
+   ctx := ctx';
+   update_file (file ())
+
 let play f =
    if Option.is_some (file ()) then
       failwith "already playing";
    reset_output ();
-   ctx := Some {
+   set_ctx (Some {
       file = f;
       events = Export.export_events f;
       pivot_time = Unix.gettimeofday ();
       pivot_miditime = 0;
       pivot_tempo = CtrlMap.get 0 (File.tempo_map f);
-   }
+   })
 
 let stop () =
-   ctx := None;
+   set_ctx None;
    reset_output ();
    for i = 0 to 15 do
       ctrl2 i Ctrl.all_notes_off 0 |> MidiCmd.to_string |> MidiIo.output

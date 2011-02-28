@@ -45,6 +45,11 @@ let create_main_window () =
    and m_file_saveas () =
       let filename = FileDialog.get_save_filename (Global.get g_window) in
       profile (fun () -> Export.export_file (file ()) filename)
+   and m_play () =
+      if Player.file () = None then
+         Player.play (file ())
+      else
+         Player.stop ()
    and m_refresh_devices () =
       let m = Global.get output_device in
       List.iter (fun i -> m#remove i) m#all_children;
@@ -83,6 +88,7 @@ let create_main_window () =
    let accel = GtkData.AccelGroup.create () in
    let _C_S = [`CONTROL; `SHIFT] in
    let wfile_e, update_wfile = E.create () in
+   let wfile_s = S.hold ~eq:(==) None wfile_e in
    let hist_s =
       E.map (fun wf' ->
          match wf' with
@@ -96,7 +102,14 @@ let create_main_window () =
    ) and redo_s = hist_s |> S.map (function
       | _, (_, desc) :: _ -> "Redo " ^ desc, true
       | _ -> "Redo", false
-   ) in
+   ) and play_s =
+      let fn f w =
+         match f with
+         | Some _ -> "Stop", true
+         | None   -> "Play", Option.is_some w
+      in
+      S.l2 fn Player.file_signal wfile_s
+   in
    window ~g:g_window ~callbacks:[Player.stop] ~accel ~title:"GtkSugar Test" (
       vbox [
          `fill, menubar ~accel [
@@ -110,8 +123,9 @@ let create_main_window () =
             menu "Edit" [
                dynitem undo_s               ~key:_Z (fun () -> (wfile ())#undo);
                dynitem redo_s               ~key:_Y (fun () -> (wfile ())#redo);
-               item "Play" (fun () -> Player.play (file ()));
-               item "Stop" Player.stop;
+            ];
+            menu "Play" [
+               dynitem play_s    ~modi:[]   ~key:_space m_play;
             ];
             menu "Settings" [
                menu ~gm:output_device "Output device" [];

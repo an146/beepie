@@ -1,6 +1,5 @@
 OCAMLPACKS[] +=
    lablgtk2
-   react
    unix
 
 FILES[] =
