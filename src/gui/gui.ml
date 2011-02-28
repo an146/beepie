@@ -97,7 +97,7 @@ let create_main_window () =
       | _, (_, desc) :: _ -> "Redo " ^ desc, true
       | _ -> "Redo", false
    ) in
-   window ~g:g_window ~accel ~title:"GtkSugar Test" (
+   window ~g:g_window ~callbacks:[Player.stop] ~accel ~title:"GtkSugar Test" (
       vbox [
          `fill, menubar ~accel [
             menu "File" [
@@ -111,6 +111,7 @@ let create_main_window () =
                dynitem undo_s               ~key:_Z (fun () -> (wfile ())#undo);
                dynitem redo_s               ~key:_Y (fun () -> (wfile ())#redo);
                item "Play" (fun () -> Player.play (file ()));
+               item "Stop" Player.stop;
             ];
             menu "Settings" [
                menu ~gm:output_device "Output device" [];
