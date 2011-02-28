@@ -7,10 +7,18 @@ module Track = MidiTrack
 
 class file_widget initfile =
    let tracks_table = GPack.table () in
+   let tab_area = GMisc.drawing_area () in
    let box = vbox [
       `fill,   tracks_table#coerce;
       `fill,   separator `HORIZONTAL;
-      `expand, vbox [];
+      `expand, notebook ~show_tabs:false [
+         scrolled_window [
+            tab_area#coerce;
+         ];
+         scrolled_window [
+            button "bla";
+         ];
+      ]
    ] in
    let tracks_table_rows = Stack.create () in
    let hist_s, set_hist = S.create ~eq:(==) ([], []) in

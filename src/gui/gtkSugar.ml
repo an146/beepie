@@ -131,9 +131,12 @@ let layout ?callbacks layout_width layout_height =
   coerce layout
 
 (** Scrolled window *)
-let scrolled_window width height child =
-  let sw = GBin.scrolled_window ~width ~height () in
-  sw#add child;
+let scrolled_window ?g ?width ?height children =
+  let sw = GBin.scrolled_window ?width ?height () in
+  (match children with
+  | c :: _ -> sw#add c
+  | _ -> ());
+  setg g sw;
   coerce sw
 
 (** Slider *)
@@ -178,8 +181,8 @@ let combo_box_text ?callbacks strings =
   ) callbacks;
   coerce combo
 
-let notebook ?g pages =
-  let n = GPack.notebook () in
+let notebook ?g ?show_tabs pages =
+  let n = GPack.notebook ?show_tabs () in
   let add_page p = p |> n#append_page |> ignore in
   List.iter add_page pages;
   setg g n;

@@ -71,7 +71,11 @@ val layout :
   int -> int -> widget
 
 val scrolled_window :
-  int -> int -> widget -> widget
+  ?g:(GBin.scrolled_window Global.t) ->
+  ?width:int ->
+  ?height:int ->
+  widget list ->
+  widget
 
 (** Slider widget for adjusting a value.  If [signal] is provided then the
     value of that signal will follow the slider's value.  *)
@@ -91,6 +95,7 @@ val combo_box_text :
 
 val notebook :
   ?g:GPack.notebook Global.t ->
+  ?show_tabs:bool ->
   widget list -> widget
 
 class ['a] tnotebook :
