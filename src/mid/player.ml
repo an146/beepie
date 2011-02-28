@@ -1,55 +1,53 @@
 open Batteries
+module File = MidiFile
 
-let file, set_file =
-   let f = ref None in
-   let m = RMutex.create () in
-   let s f = RMutex.synchronize ~lock:m f in
-   s (fun () -> !f), s (fun f' -> f := f')
+let miditime_of_time t tempo d =
+   int_of_float (t *. 1000000.0 *. (float_of_int d) /. (float_of_int tempo))
 
-let pipe_in, pipe_out = Unix.pipe ()
+let time_of_miditime mt tempo d =
+   (float_of_int mt) *. (float_of_int tempo) /. (float_of_int d) /. 1000000.0
 
-(*
-let thread =
-   let f () =
-      let prev_file = 
-      while true do
-         let timeout =
-            match file () with
-            | None -> reset (); 1.0
-            | Some f -> play_some_events f
-         in
-         ThreadUnix.timed_read "_" 0 1 timeout |> ignore
-      done
-   in
-   Thread.create f () |> ignore
-   *)
+type ctx = {
+   file : MidiFile.t;
+   events : (int * int * MidiCmd.t) Enum.t;
+   mutable pivot_time : float;
+   mutable pivot_miditime : int;
+   mutable pivot_tempo : int;
+}
 
-let notify () =
-   Unix.write pipe_out "!" 0 1 |> ignore
+let ctx = ref None
 
-let thread = ref (Thread.self ())
+let process () =
+   Option.may (fun c ->
+      let div = File.division c.file in
+      let dt = Unix.gettimeofday () -. c.pivot_time in
+      let dtime = miditime_of_time dt c.pivot_tempo div in
+      let flt (t, _, _) = t <= c.pivot_miditime + dtime in
+      Enum.take_while flt c.events |> Enum.iter (fun (t, tr, cmd) ->
+         match cmd with
+         | `Tempo tempo ->
+               c.pivot_time <- c.pivot_time +. (
+                  time_of_miditime (t - c.pivot_miditime) c.pivot_tempo div
+               );
+               c.pivot_miditime <- t;
+               c.pivot_tempo <- tempo
+         | _ -> ();
+         MidiIo.output (MidiCmd.to_string cmd)
+      );
+      MidiIo.flush_output ()
+   ) !ctx
+
+let file () = Option.map (fun {file} -> file) !ctx
 
 let play f =
    if Option.is_some (file ()) then
       failwith "already playing";
-   set_file (Some f);
-   print_endline "1";
-   MidiFile.tracks f |> ignore;
-   let do_play f =
-      notify ();
-      let time = ref 0 in
-      Export.export_events f |> Enum.iter (fun (t, tr, cmd) ->
-         let dtime = t - !time in
-         Printf.printf "dt: %i\n%!" dtime;
-         if dtime > 0 then (
-            MidiIo.flush_output ();
-            Thread.select [] [] [] (float_of_int dtime /. 600.0) |> ignore
-         );
-         time := t;
-         cmd |> MidiCmd.to_string |> MidiIo.output
-      );
-   in
-   thread := Thread.create do_play f;
-   ThreadUnix.timed_read pipe_in "_" 0 1 100.0 |> ignore
+   ctx := Some {
+      file = f;
+      events = Export.export_events f;
+      pivot_time = Unix.gettimeofday ();
+      pivot_miditime = 0;
+      pivot_tempo = CtrlMap.get 0 (File.tempo_map f);
+   }
 
 (* vim: set ts=3 sw=3 tw=80 : *)

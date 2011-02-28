@@ -1,6 +1,7 @@
 open Batteries
 open FileWidget
 open GdkKeysyms
+open Glib
 open GtkSugar
 open MiscUtils (* global_init *)
 open React
@@ -123,7 +124,7 @@ let create_main_window () =
    ) |> ignore;
    let files = Array.enum Sys.argv |> Enum.skip 1 in
    Enum.iter (Import.import_file |- add_file) files;
-   Glib.Idle.add (fun () -> Thread.yield (); true) |> ignore;
+   Timeout.add ~ms:1 ~callback:(fun () -> Player.process (); true) |> ignore;
    m_refresh_devices ()
 
 let main () =
