@@ -76,6 +76,9 @@ class file_widget initfile =
                let sep () = `fill, separator `VERTICAL in
 
                let track_s = S.map ~eq:(==) (File.track i) file_s in
+               let track_s = track_s |> S.trace (fun t ->
+                  Applicature.update t [40; 45; 50; 55; 59; 64]
+               ) in
                let volume_s = S.map (Track.tvalue Ctrl.volume) track_s in
                (*let map_track desc fn =
                   self#commit (File.map_track i fn self#file) desc

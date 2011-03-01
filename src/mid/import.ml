@@ -72,6 +72,7 @@ let import_events ?(division = 240) events =
                midipitch;
                on_time; on_vel;
                off_time; off_vel;
+               str = 0;
             } in
             file := File.add_note ~channel track note !file;
             notes.(channel).(midipitch) <- None

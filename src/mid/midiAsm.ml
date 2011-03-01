@@ -22,6 +22,7 @@ let note midipitch (on_time, on_vel) (off_time, off_vel) = {
    midipitch;
    on_time; on_vel;
    off_time; off_vel;
+   str = 0;
 }
 
 let tempo t = `Tempo t

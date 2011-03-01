@@ -1,4 +1,5 @@
 FILES[] =
+   applicature
    ctrl
    ctrlMap
    import
