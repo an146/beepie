@@ -87,11 +87,29 @@ let test_omit_head_track () =
    in
    assert_equal 1 (File.tracks_count file)
 
+let test_volume () =
+   let file =
+      Import.import_inline [
+         [
+            100, on  0 30 64;
+            200, off 0 30 64;
+         ];
+         [
+            50,  ctrl2 1 Ctrl.volume 123;
+            100, on  1 30 64;
+            200, off 1 30 64;
+         ];
+      ]
+   in
+   assert_equal (File.tvalue (0, Ctrl.volume) file) 100;
+   assert_equal (File.tvalue (1, Ctrl.volume) file) 123
+
 let tests =
    "import" >::: [
       "simple-notes" >:: test_simple_notes;
       "maps" >:: test_maps;
       "omit-head-track" >:: test_omit_head_track;
+      "volume" >:: test_volume;
    ];;
 
 (* vim: set ts=3 sw=3 tw=80 : *)
