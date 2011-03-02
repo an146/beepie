@@ -142,6 +142,7 @@ let add_note ?channel tr n f =
             let values c n = [n.on_time; n.off_time; n.midipitch; c] in
             compare (values c1 n1) (values c2 n2)
          in
+         assert (m.start < n.off_time && m.start + m.len >= n.on_time);
          let notes = List.sort ~cmp:note_compare ((c, n) :: m.notes) in
          {m with notes}
       in

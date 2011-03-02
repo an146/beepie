@@ -74,7 +74,10 @@ class file_widget initfile =
                let btn = button ~relief:`NONE in
                let sep () = `fill, separator `VERTICAL in
 
-               let track_s = S.map (fun f -> f, File.track i f) file_s in
+               let track_s =
+                  let eq (f, t) (f', t') = f == f' && t = t' in
+                  S.map ~eq (fun f -> f, File.track i f) file_s
+               in
                let track_s = track_s |> S.trace (fun ft ->
                   Applicature.update ft [40; 45; 50; 55; 59; 64]
                ) in
