@@ -8,7 +8,6 @@ FILES[] =
    midiCmd
    midiFile
    midiIo
-   midiTrack
    player
    timeSig
    varlen

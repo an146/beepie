@@ -14,7 +14,7 @@ let cartesian e e' =
       Enum.map (fun elt' -> elt, elt') e'
    ) e |> Enum.flatten
 
-let update track strings =
+let update (file, track) strings =
    let string_choices note =
       List.enum strings |> weak_filter ((>=) note.midipitch)
    in
@@ -26,7 +26,7 @@ let update track strings =
             |> Enum.map apply
    in
    let init = Enum.singleton ([], strings) in
-   let notes = MidiTrack.enum track in
+   let notes = MidiFile.enum_notes ~track file in
    let a = Enum.fold place init notes |> Enum.get |> Option.get in
    List.iter (fun (n, s) -> n.str <- s) (fst a)
 

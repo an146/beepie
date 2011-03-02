@@ -1,51 +1,67 @@
 open Batteries
 open MidiNote
-module Track = MidiTrack
+open PMap.Infix
 
 exception Channel_conflict
 
+type track_id = int
+
 type t = {
    division : int;
-   tracks : Track.t list;
+   tracks : track_id Vect.t;
+   channel_usage : (track_id * int) Vect.t;
+
+   tvalues : ((track_id * Ctrl.t), int) PMap.t;
    ctrl_maps : ((int * Ctrl.t), int CtrlMap.t) PMap.t;
    tempo_map : int CtrlMap.t;
    timesig_map : TimeSig.t CtrlMap.t;
 }
 
-let default_ctrl_maps =
-   let entry (ch, ct) = (ch, ct), Ctrl.create_map ct in
-   Ctrl.all_supported_c |> List.enum |> Enum.map entry |> PMap.of_enum
+(*
+let note_compare (c1, n1) (c2, n2) =
+   let values c n = [n.on_time; n.off_time; n.midipitch; c] in
+   compare (values c1 n1) (values c2 n2)
+*)
 
-let create division = {
-   division;
-   tracks = [];
-   ctrl_maps = default_ctrl_maps;
-   tempo_map = CtrlMap.create ~min:0 ~max:0xFFFFFF (60000000 / 120);
-   timesig_map = CtrlMap.create (TimeSig.create 4 4);
-}
+let create division =
+   let ctrl_maps =
+      let entry (ch, ct) = (ch, ct), Ctrl.create_map ct in
+      Ctrl.all_supported_c |> List.enum |> Enum.map entry |> PMap.of_enum
+   in
+   {
+      division;
+      tracks = Vect.empty;
+      channel_usage = Vect.make 16 (-1, 0);
+
+      tvalues = PMap.empty;
+      ctrl_maps;
+      tempo_map = CtrlMap.create ~min:0 ~max:0xFFFFFF (60000000 / 120);
+      timesig_map = CtrlMap.create (TimeSig.create 4 4);
+   }
 
 let division {division} = division
 
-let tracks f = List.enum f.tracks
-let set_tracks tracks f = {f with tracks = List.of_enum tracks}
-let tracks_count {tracks} = List.length tracks
-let track i f = List.at f.tracks i
+let track i {tracks} = Vect.get tracks i
+let tracks {tracks} = Vect.enum tracks
+let tracks_count {tracks} = Vect.length tracks
+let track_index ({tracks}, tr) = Vect.findi ((=) tr) tracks
 
-let add_track f =
-   let track = Track.create () in
-   let tracks = List.append f.tracks [track] in
-   {f with tracks}
+let owns {channel_usage} tr c =
+   let (tr', n) = Vect.get channel_usage c in
+   tr = tr' && n > 0
 
-let remove_track i f =
-   let tracks = tracks f |> DynArray.of_enum in
-   DynArray.delete tracks i;
-   set_tracks (DynArray.enum tracks) f
+let channels tr f =
+   (0 -- 15) |> Enum.filter (owns f tr)
 
-let map_ith i f = List.mapi (fun j elt -> if i = j then f elt else elt)
+let add_track =
+   let id = ref 1000 in
+   fun f ->
+      let id = (incr id; !id) in
+      {f with tracks = Vect.append id f.tracks}
 
-let map_track i fn f =
-   let tracks = map_ith i fn f.tracks in
-   {f with tracks}
+let remove_track tr f =
+   assert (Enum.is_empty (channels tr f));
+   {f with tracks = Vect.filter ((<>) tr) f.tracks}
 
 let add_note ?channel t note f =
    let c =
@@ -53,11 +69,18 @@ let add_note ?channel t note f =
       | Some c -> c
       | None -> assert false
    in
-   map_track t (Track.add_note note c) f
+   ignore c;
+   f
 
-let channel_owner c f =
-   let tracks = tracks f |> Array.of_enum in
-   Array.Exceptionless.findi (Track.owns c) tracks
+let enum_notes ?track f =
+   let e = Enum.empty () in
+   match track with
+   | Some t -> e // (fun (c, _) -> owns f t c)
+   | None -> e
+
+let channel_owner c {channel_usage} =
+   let (t, n) = Vect.get channel_usage c in
+   if n > 0 then Some t else None
 
 let check_ctrl_idx (ch, ct) =
    if ch < 0 || ch >= 16 then
@@ -79,35 +102,21 @@ let set_tempo_map tempo_map f = {f with tempo_map}
 let timesig_map {timesig_map} = timesig_map
 let set_timesig_map timesig_map f = {f with timesig_map}
 
-let tvalue (tn, ct) f =
-   track tn f |> Track.tvalue ct
+let tvalue ct ({tvalues}, tr) = tvalues --> (tr, ct)
 
-let set_tvalue (tn, ct) v f =
-   let f = map_track tn (Track.reset_tvalue ct v) f in
+let set_tvalue ct v (f, tr) =
+   let f = {f with tvalues = f.tvalues <-- ((tr, ct), v)} in
    let fix_channel f c =
-      let ctrl_maps = f.ctrl_maps |> PMap.modify (c, ct) (CtrlMap.reset v) in
-      {f with ctrl_maps}
+      let map = Ctrl.create_map ct |> CtrlMap.reset v in
+      {f with ctrl_maps = f.ctrl_maps <-- ((c, ct), map)}
    in
-   Track.channels (track tn f) |> Enum.fold fix_channel f
+   channels tr f |> Enum.fold fix_channel f
 
-let set_volume tn v f = set_tvalue (tn, Ctrl.volume) v f
+let volume = tvalue Ctrl.volume
+let set_volume = set_tvalue Ctrl.volume
 
 let get_note_ctrl (chan, note) ct f =
    let cm = ctrl_map (chan, ct) f in
    CtrlMap.get note.on_time cm
-
-let reset_tvalues f =
-   let do_reset track =
-      try
-         let note = Track.choose_note track in
-         let tvalues =
-            Ctrl.tvalues |> List.enum |> Enum.map (fun ct ->
-               ct, get_note_ctrl note ct f
-            ) |> PMap.of_enum
-         in
-         Track.reset_tvalues tvalues track
-      with _ -> track
-   in
-   {f with tracks = List.map do_reset f.tracks}
 
 (* vim: set ts=3 sw=3 tw=80 : *)

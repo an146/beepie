@@ -6,7 +6,6 @@ open MidiNote
 open MiscUtils
 open Varlen
 module File = MidiFile
-module Track = MidiTrack
 
 type channel_ctx = {
    track : int;
@@ -35,8 +34,8 @@ let export_events file =
          let entry c = c, Ctrl.default_value c in
          Ctrl.all_supported |> List.enum |> Enum.map entry |> PMap.of_enum
       in
-      let ctx track = {
-         track;
+      let ctx tr = {
+         track = File.track_index (file, tr);
          ons = 0;
          ctrls_current;
          ctrls_cached = PMap.empty
@@ -50,7 +49,7 @@ let export_events file =
       | Some ctx -> ctx
    in
    let e_ons =
-      let e_track t = Track.enum t /@ fun n -> On n in
+      let e_track tr = File.enum_notes ~track:tr file /@ fun n -> On n in
       File.tracks file /@ e_track
    and e_ctrls =
       let all_channels = 0 -- 15 |> List.of_enum in

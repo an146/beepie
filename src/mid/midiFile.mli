@@ -2,30 +2,32 @@ open Batteries
 open MidiNote
 
 type t
+type track_id = private int
 
 val create : int -> t
 val division : t -> int
+
+val track : int -> t -> track_id
+val tracks : t -> track_id Enum.t
+val tracks_count : t -> int
+val track_index : (t * track_id) -> int
 val add_track : t -> t
-val remove_track : int -> t -> t
-val map_track : int -> (MidiTrack.t -> MidiTrack.t) -> t -> t
-val add_note : ?channel:int -> int -> note -> t -> t
-val channel_owner : int -> t -> int option
+val remove_track : track_id -> t -> t
+val channels : track_id -> t -> int Enum.t
+val channel_owner : int -> t -> track_id option
+
+val add_note : ?channel:int -> track_id -> note -> t -> t
+val enum_notes : ?track:track_id -> t -> (int * note) Enum.t
+
 val ctrl_map : (int * Ctrl.t) -> t -> int CtrlMap.t
 val set_ctrl_map : (int * Ctrl.t) -> int CtrlMap.t -> t -> t
 val tempo_map : t -> int CtrlMap.t
 val set_tempo_map : int CtrlMap.t -> t -> t
 val timesig_map : t -> TimeSig.t CtrlMap.t
 val set_timesig_map : TimeSig.t CtrlMap.t -> t -> t
-val tvalue : (int * Ctrl.t) -> t -> int
-val set_tvalue : (int * Ctrl.t) -> int -> t -> t
-val set_volume : int -> int -> t -> t
-(* val enum_notes : ?track:int -> t -> (int * note) Enum.t *)
-val tracks_count : t -> int
-val tracks : t -> MidiTrack.t Enum.t
-val track : int -> t -> MidiTrack.t
-val get_note_ctrl : (int * note) -> Ctrl.t -> t -> int
-
-(* Internal *)
-val reset_tvalues : t -> t
+val tvalue : Ctrl.t -> (t * track_id) -> int
+val set_tvalue : Ctrl.t -> int -> (t * track_id) -> t
+val volume : (t * track_id) -> int
+val set_volume : int -> (t * track_id) -> t
 
 (* vim: set ts=3 sw=3 tw=80 : *)

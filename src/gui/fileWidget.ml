@@ -3,7 +3,6 @@ open GtkBase
 open GtkSugar
 open React
 module File = MidiFile
-module Track = MidiTrack
 
 class file_widget initfile =
    let tracks_table = GPack.table () in
@@ -75,17 +74,18 @@ class file_widget initfile =
                let btn = button ~relief:`NONE in
                let sep () = `fill, separator `VERTICAL in
 
-               let track_s = S.map ~eq:(==) (File.track i) file_s in
-               let track_s = track_s |> S.trace (fun t ->
-                  Applicature.update t [40; 45; 50; 55; 59; 64]
+               let track_s = S.map (fun f -> f, File.track i f) file_s in
+               let track_s = track_s |> S.trace (fun ft ->
+                  Applicature.update ft [40; 45; 50; 55; 59; 64]
                ) in
-               let volume_s = S.map (Track.tvalue Ctrl.volume) track_s in
+               let volume_s = S.map (File.volume) track_s in
                (*let map_track desc fn =
                   self#commit (File.map_track i fn self#file) desc
                in*)
                let set_volume v =
-                  if Track.volume (S.value track_s) != v then
-                     self#commit_map "Set Volume" (File.set_volume i v)
+                  let ft = S.value track_s in
+                  if File.volume ft != v then
+                     self#commit "Set Volume" (File.set_volume v ft)
                in
                let row = [
                   `fill,   btn (string_of_int (i + 1));

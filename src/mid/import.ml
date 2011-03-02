@@ -5,7 +5,6 @@ open MidiAsm
 open MidiNote
 open Varlen
 module File = MidiFile
-module Track = MidiTrack
 
 type chunk = {
    magic  : string;
@@ -61,7 +60,7 @@ let import_events ?(division = 240) events =
    let off channel midipitch off_time off_vel =
       match notes.(channel).(midipitch) with
       | None -> ()
-      | Some (track, on_time, on_vel) ->
+      | Some (tn, on_time, on_vel) ->
             let off_vel =
                if off_vel >= 0 then
                   off_vel
@@ -74,7 +73,7 @@ let import_events ?(division = 240) events =
                off_time; off_vel;
                str = 0;
             } in
-            file := File.add_note ~channel track note !file;
+            file := File.add_note ~channel (File.track tn !file) note !file;
             notes.(channel).(midipitch) <- None
    in
    let ctrl c t time v =
@@ -118,9 +117,8 @@ let import_events ?(division = 240) events =
    if !unhandled > 0 then
       Printf.printf "%i events unhandled\n%!" !unhandled;
    let head_track = File.track 0 !file in
-   if Track.is_empty head_track then
-      file := File.remove_track 0 !file;
-   file := File.reset_tvalues !file;
+   if Enum.is_empty (File.channels head_track !file) then
+      file := File.remove_track head_track !file;
    !file
 
 let import_events ?division t =
