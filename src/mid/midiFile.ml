@@ -125,14 +125,19 @@ let add_note ?channel tr n f =
       )
    in
    let measures =
-      let m = ref f.measures in
-      let t = ref (try (Vect.last !m).start with _ -> 0) in
+      let ms = ref f.measures in
+      let t = ref (
+         try
+            let m = Vect.last !ms in
+            m.start + m.len
+         with _ -> 0
+      ) in
       while !t < n.off_time do
          let l = CtrlMap.get !t f.timesig_map |> TimeSig.len f.division in
-         m := Vect.append {start = !t; len = l; notes = []} !m;
+         ms := Vect.append {start = !t; len = l; notes = []} !ms;
          t := !t + l
       done;
-      !m
+      !ms
    in
    let measures =
       let s = find_measure n.on_time measures in
@@ -165,7 +170,7 @@ let enum_notes ?track f =
       let notes m =
          List.enum m.notes // (fun (_, n) -> n.on_time >= m.start)
       in
-      Vect.enum f.measures |> Enum.map notes |> Enum.flatten
+      (Vect.enum f.measures |> Enum.map notes |> Enum.flatten)
    in
    match track with
    | Some t -> e |> Enum.filter (fun (c, _) -> owns f t c)

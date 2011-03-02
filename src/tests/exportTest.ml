@@ -10,6 +10,7 @@ let test_simple_notes () =
    let tr = File.track 0 file in
    let file = File.add_note ~channel tr (note 30 (0, 64) (100, 65)) file in
    let file = File.add_note ~channel tr (note 30 (300, 64) (400, 65)) file in
+   let file = File.add_note ~channel tr (note 31 (1000, 64) (10000, 65)) file in
    let pw = File.ctrl_map (0, Ctrl.pitchwheel) file in
    let pw = CtrlMap.set 0   0x2000 pw in (* default, no effect *)
    let pw = CtrlMap.set 50  0x2001 pw in
@@ -40,6 +41,8 @@ let test_simple_notes () =
       300, 0,  pitchwheel 0 0x2004;
       300, 0,  on 0 30 64;
       400, 0,  off 0 30 65;
+      1000,  0, on 0 31 64;
+      10000, 0, off 0 31 65;
    ] events
 
 let tests =
