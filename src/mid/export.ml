@@ -2,10 +2,10 @@ open Batteries
 open IO
 open BigEndian
 open MidiAsm
+open MidiFile
 open MidiNote
 open MiscUtils
 open Varlen
-module File = MidiFile
 
 type channel_ctx = {
    track : int;
@@ -35,12 +35,12 @@ let export_events file =
          Ctrl.all_supported |> List.enum |> Enum.map entry |> PMap.of_enum
       in
       let ctx tr = {
-         track = File.track_index (file, tr);
+         track = F.track_index (file, tr);
          ons = 0;
          ctrls_current;
          ctrls_cached = PMap.empty
       } in
-      Array.init 16 (fun i -> File.channel_owner i file |> Option.map ctx)
+      Array.init 16 (fun i -> F.channel_owner i file |> Option.map ctx)
    in
    let owned i = Option.is_some cctxs.(i)
    and cctx i =
@@ -49,22 +49,22 @@ let export_events file =
       | Some ctx -> ctx
    in
    let e_ons =
-      let e_track tr = File.enum_notes ~track:tr file /@ fun n -> On n in
-      File.tracks file /@ e_track
+      let e_track tr = F.enum_notes ~track:tr file /@ fun n -> On n in
+      F.tracks file /@ e_track
    and e_ctrls =
       let all_channels = 0 -- 15 |> List.of_enum in
       let ctrls = List.cartesian_product all_channels Ctrl.all_supported in
       let e_ctrl (ch, ct) =
-         let ctrl_map = File.ctrl_map (ch, ct) file in
+         let ctrl_map = F.ctrl_map (ch, ct) file in
          CtrlMap.enum ctrl_map /@ fun c -> Ctrl (ch, ct, c)
       in
       List.enum ctrls // (fun (i, _) -> owned i) /@ e_ctrl
    and e_tempo =
       let cmd (t, v) = HeadTrackCmd (t, tempo v) in
-      File.tempo_map file |> CtrlMap.enum |> Enum.map cmd
+      F.tempo_map file |> CtrlMap.enum |> Enum.map cmd
    and e_timesig =
       let cmd (t, v) = HeadTrackCmd (t, `TimeSig v) in
-      File.timesig_map file |> CtrlMap.enum |> Enum.map cmd
+      F.timesig_map file |> CtrlMap.enum |> Enum.map cmd
    in
    let event_track = function
       | HeadTrackCmd (time, _) ->
@@ -142,9 +142,9 @@ let export_output f out =
    nwrite out "MThd";
    write_i32 out 6;
    write_ui16 out 1;
-   let ntracks = File.tracks_count f + 1 in
+   let ntracks = F.tracks_count f + 1 in
    write_ui16 out ntracks;
-   write_ui16 out (File.division f);
+   write_ui16 out (F.division f);
    let tctxs =
       let tctx _ = 0, ref (-1), output_string () in
       Array.init ntracks tctx

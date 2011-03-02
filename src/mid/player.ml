@@ -1,7 +1,7 @@
 open Batteries
 open MidiAsm
+open MidiFile
 open React
-module File = MidiFile
 
 let miditime_of_time t tempo d =
    int_of_float (t *. 1000000.0 *. (float_of_int d) /. (float_of_int tempo))
@@ -10,7 +10,7 @@ let time_of_miditime mt tempo d =
    (float_of_int mt) *. (float_of_int tempo) /. (float_of_int d) /. 1000000.0
 
 type ctx = {
-   file : MidiFile.t;
+   file : file;
    events : (int * int * MidiCmd.t) Enum.t;
    mutable pivot_time : float;
    mutable pivot_miditime : int;
@@ -32,7 +32,7 @@ let reset_output () =
 
 let process () =
    Option.may (fun c -> try
-      let div = File.division c.file in
+      let div = F.division c.file in
       let dt = Unix.gettimeofday () -. c.pivot_time in
       let dtime = miditime_of_time dt c.pivot_tempo div in
       let endtime = c.pivot_miditime + dtime in
@@ -75,7 +75,7 @@ let play f =
       events = Export.export_events f;
       pivot_time = Unix.gettimeofday ();
       pivot_miditime = 0;
-      pivot_tempo = CtrlMap.get 0 (File.tempo_map f);
+      pivot_tempo = CtrlMap.get 0 (F.tempo_map f);
    })
 
 let stop () =

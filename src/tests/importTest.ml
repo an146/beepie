@@ -1,7 +1,7 @@
 open Batteries
 open MidiAsm
+open MidiFile
 open OUnit
-module File = MidiFile
 
 let notes_printer notes =
    string_of_int (List.length (List.hd notes));;
@@ -35,8 +35,8 @@ let test_simple_notes () =
          ]
       ]
    in
-   let get_track_notes tr = File.enum_notes ~track:tr file |> List.of_enum in
-   let imp_notes = File.tracks file /@ get_track_notes |> List.of_enum in
+   let get_track_notes tr = F.enum_notes ~track:tr file |> List.of_enum in
+   let imp_notes = F.tracks file /@ get_track_notes |> List.of_enum in
    assert_equal ~printer:notes_printer notes imp_notes;;
 
 let test_maps () =
@@ -67,10 +67,10 @@ let test_maps () =
       in
       assert_equal ~printer values (CtrlMap.bindings map)
    in
-   let c ct = File.ctrl_map (0, ct) file in
+   let c ct = F.ctrl_map (0, ct) file in
    test (c Ctrl.pitchwheel) [100, 0x2001; 200, 0x2002];
    test (c Ctrl.volume) [0, 10; 200, 20];
-   test (File.tempo_map file) [100, 12345]
+   test (F.tempo_map file) [100, 12345]
 
 let test_omit_head_track () =
    let file =
@@ -84,7 +84,7 @@ let test_omit_head_track () =
          ];
       ]
    in
-   assert_equal 1 (File.tracks_count file)
+   assert_equal 1 (F.tracks_count file)
 
 let test_volume () =
    let file =
@@ -100,8 +100,8 @@ let test_volume () =
          ];
       ]
    in
-   assert_equal (File.volume (file, File.track 0 file)) 100;
-   assert_equal (File.volume (file, File.track 1 file)) 123
+   assert_equal (F.volume (file, F.track 0 file)) 100;
+   assert_equal (F.volume (file, F.track 1 file)) 123
 
 let tests =
    "import" >::: [

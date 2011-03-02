@@ -1,4 +1,5 @@
 open Batteries
+open MidiFile
 open MidiNote
 
 let weak_filter f e =
@@ -26,7 +27,7 @@ let update (file, track) strings =
             |> Enum.map apply
    in
    let init = Enum.singleton ([], strings) in
-   let notes = MidiFile.enum_notes ~track file in
+   let notes = F.enum_notes ~track file in
    let a = Enum.fold place init notes |> Enum.get |> Option.get in
    List.iter (fun (n, s) -> n.str <- s) (fst a)
 

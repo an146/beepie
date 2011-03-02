@@ -1,8 +1,8 @@
 open Batteries
 open GtkBase
 open GtkSugar
+open MidiFile
 open React
-module File = MidiFile
 
 class file_widget initfile =
    let tracks_table = GPack.table () in
@@ -76,19 +76,16 @@ class file_widget initfile =
 
                let track_s =
                   let eq (f, t) (f', t') = f == f' && t = t' in
-                  S.map ~eq (fun f -> f, File.track i f) file_s
+                  S.map ~eq (fun f -> f, F.track i f) file_s
                in
                let track_s = track_s |> S.trace (fun ft ->
                   Applicature.update ft [40; 45; 50; 55; 59; 64]
                ) in
-               let volume_s = S.map (File.volume) track_s in
-               (*let map_track desc fn =
-                  self#commit (File.map_track i fn self#file) desc
-               in*)
+               let volume_s = S.map (F.volume) track_s in
                let set_volume v =
                   let ft = S.value track_s in
-                  if File.volume ft != v then
-                     self#commit "Set Volume" (File.set_volume v ft)
+                  if F.volume ft != v then
+                     self#commit "Set Volume" (F.set_volume v ft)
                in
                let row = [
                   `fill,   btn (string_of_int (i + 1));
@@ -111,7 +108,7 @@ class file_widget initfile =
                Stack.push (List.map snd row) tracks_table_rows;
             done
          in
-         attach_signal (S.map up (S.map File.tracks_count file_s)) tracks_table
+         attach_signal (S.map up (S.map F.tracks_count file_s)) tracks_table
    end
 
 let file_widget = new file_widget

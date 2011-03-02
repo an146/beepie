@@ -1,17 +1,17 @@
 open Batteries
 open MidiAsm
+open MidiFile
 open OUnit
 open Printf
-module File = MidiFile
 
 let test_simple_notes () =
    let channel = 0 in
-   let file = File.create 240 |> File.add_track in
-   let tr = File.track 0 file in
-   let file = File.add_note ~channel tr (note 30 (0, 64) (100, 65)) file in
-   let file = File.add_note ~channel tr (note 30 (300, 64) (400, 65)) file in
-   let file = File.add_note ~channel tr (note 31 (1000, 64) (10000, 65)) file in
-   let pw = File.ctrl_map (0, Ctrl.pitchwheel) file in
+   let file = F.create 240 |> F.add_track in
+   let tr = F.track 0 file in
+   let file = F.add_note ~channel tr (note 30 (0, 64) (100, 65)) file in
+   let file = F.add_note ~channel tr (note 30 (300, 64) (400, 65)) file in
+   let file = F.add_note ~channel tr (note 31 (1000, 64) (10000, 65)) file in
+   let pw = F.ctrl_map (0, Ctrl.pitchwheel) file in
    let pw = CtrlMap.set 0   0x2000 pw in (* default, no effect *)
    let pw = CtrlMap.set 50  0x2001 pw in
 
@@ -21,10 +21,10 @@ let test_simple_notes () =
    let pw = CtrlMap.set 200 0x2000 pw in
 
    let pw = CtrlMap.set 201 0x2004 pw in (* comes into effect at 300 *)
-   let file = File.set_ctrl_map (0, Ctrl.pitchwheel) pw file in
+   let file = F.set_ctrl_map (0, Ctrl.pitchwheel) pw file in
 
-   let tempo_map = File.tempo_map file |> CtrlMap.set 300 12345 in
-   let file = File.set_tempo_map tempo_map file in
+   let tempo_map = F.tempo_map file |> CtrlMap.set 300 12345 in
+   let file = F.set_tempo_map tempo_map file in
 
    let events = List.of_enum (Export.export_events file) in
    let printer l =

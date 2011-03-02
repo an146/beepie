@@ -2,9 +2,9 @@ open Batteries
 open IO
 open BigEndian
 open MidiAsm
+open MidiFile
 open MidiNote
 open Varlen
-module File = MidiFile
 
 type chunk = {
    magic  : string;
@@ -55,7 +55,7 @@ let parse_chunks (input, inoffset) =
    Enum.from_while get_chunk
 
 let import_events ?(division = 240) events =
-   let file = ref (File.create division) in
+   let file = ref (F.create division) in
    let notes = Array.init 16 (fun _ -> Array.make 128 None) in
    let off channel midipitch off_time off_vel =
       match notes.(channel).(midipitch) with
@@ -73,13 +73,13 @@ let import_events ?(division = 240) events =
                off_time; off_vel;
                str = 0;
             } in
-            file := File.add_note ~channel (File.track tn !file) note !file;
+            file := F.add_note ~channel (F.track tn !file) note !file;
             notes.(channel).(midipitch) <- None
    in
    let ctrl c t time v =
       if Ctrl.is_supported t then (
-         let map = File.ctrl_map (c, t) !file |> CtrlMap.set time v in
-         file := File.set_ctrl_map (c, t) map !file;
+         let map = F.ctrl_map (c, t) !file |> CtrlMap.set time v in
+         file := F.set_ctrl_map (c, t) map !file;
       );
    in
    let unhandled = ref 0 in
@@ -87,8 +87,8 @@ let import_events ?(division = 240) events =
    let handle_event (time, track, ev) =
       if track < 0 then
          first_track_used := true;
-      while File.tracks_count !file <= track do
-         file := File.add_track !file
+      while F.tracks_count !file <= track do
+         file := F.add_track !file
       done;
       match ev with
       | `NoteOn (c, n, v) ->
@@ -105,20 +105,20 @@ let import_events ?(division = 240) events =
       | `PitchWheel (c, v) ->
             ctrl c Ctrl.PitchWheel time v
       | `Tempo v ->
-            let map = File.tempo_map !file |> CtrlMap.set time v in
-            file := File.set_tempo_map map !file
+            let map = F.tempo_map !file |> CtrlMap.set time v in
+            file := F.set_tempo_map map !file
       | `TimeSig ts ->
-            let map = File.timesig_map !file |> CtrlMap.set time ts in
-            file := File.set_timesig_map map !file
+            let map = F.timesig_map !file |> CtrlMap.set time ts in
+            file := F.set_timesig_map map !file
       | _ ->
             unhandled := !unhandled + 1
    in
    Enum.iter handle_event events;
    if !unhandled > 0 then
       Printf.printf "%i events unhandled\n%!" !unhandled;
-   let head_track = File.track 0 !file in
-   if Enum.is_empty (File.channels head_track !file) then
-      file := File.remove_track head_track !file;
+   let head_track = F.track 0 !file in
+   if Enum.is_empty (F.channels head_track !file) then
+      file := F.remove_track head_track !file;
    !file
 
 let import_events ?division t =

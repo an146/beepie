@@ -12,7 +12,7 @@ type measure = {
    notes : (int * note) list;
 }
 
-type t = {
+type file = {
    division : int;
    tracks : track_id Vect.t;
    channel_usage : (track_id * int) Vect.t;
@@ -23,6 +23,10 @@ type t = {
    tempo_map : int CtrlMap.t;
    timesig_map : TimeSig.t CtrlMap.t;
 }
+
+module F = struct
+
+type t = file
 
 let create division =
    let ctrl_maps =
@@ -42,6 +46,7 @@ let create division =
    }
 
 let division {division} = division
+let measures {measures} = measures
 
 let track i {tracks} = Vect.get tracks i
 let tracks {tracks} = Vect.enum tracks
@@ -175,5 +180,7 @@ let enum_notes ?track f =
    match track with
    | Some t -> e |> Enum.filter (fun (c, _) -> owns f t c)
    | None -> e
+
+end (* module F *)
 
 (* vim: set ts=3 sw=3 tw=80 : *)

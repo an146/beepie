@@ -3,6 +3,7 @@ open FileWidget
 open GdkKeysyms
 open Glib
 open GtkSugar
+open MidiFile
 open MiscUtils (* global_init *)
 open React
 
@@ -37,7 +38,7 @@ let create_main_window () =
    let add_file f =
       (Global.get files)#append_tpage ~activate:true (file_widget f)
    in
-   let m_file_new () = add_file (MidiFile.create 240)
+   let m_file_new () = add_file (F.create 240)
    and m_file_open () =
       let filenames = FileDialog.get_open_filenames (Global.get g_window) in
       let open_file fn = add_file (Import.import_file fn) in
