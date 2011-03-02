@@ -4,6 +4,7 @@ OCAMLPACKS[] +=
 
 TESTS[] =
    binaryHeapTest
+   binarySearchTest
    ctrlMapTest
    exportTest
    importTest

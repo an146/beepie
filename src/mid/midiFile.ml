@@ -6,22 +6,23 @@ exception Channel_conflict
 
 type track_id = int
 
+type measure = {
+   start : int;
+   len : int;
+   notes : (int * note) list;
+}
+
 type t = {
    division : int;
    tracks : track_id Vect.t;
    channel_usage : (track_id * int) Vect.t;
+   measures : measure Vect.t;
 
    tvalues : ((track_id * Ctrl.t), int) PMap.t;
    ctrl_maps : ((int * Ctrl.t), int CtrlMap.t) PMap.t;
    tempo_map : int CtrlMap.t;
    timesig_map : TimeSig.t CtrlMap.t;
 }
-
-(*
-let note_compare (c1, n1) (c2, n2) =
-   let values c n = [n.on_time; n.off_time; n.midipitch; c] in
-   compare (values c1 n1) (values c2 n2)
-*)
 
 let create division =
    let ctrl_maps =
@@ -32,6 +33,7 @@ let create division =
       division;
       tracks = Vect.empty;
       channel_usage = Vect.make 16 (-1, 0);
+      measures = Vect.empty;
 
       tvalues = PMap.empty;
       ctrl_maps;
@@ -44,7 +46,7 @@ let division {division} = division
 let track i {tracks} = Vect.get tracks i
 let tracks {tracks} = Vect.enum tracks
 let tracks_count {tracks} = Vect.length tracks
-let track_index ({tracks}, tr) = Vect.findi ((=) tr) tracks
+let track_index ({tracks}, tr) = (Vect.findi ((=) tr) tracks - 1)
 
 let owns {channel_usage} tr c =
    let (tr', n) = Vect.get channel_usage c in
@@ -62,21 +64,6 @@ let add_track =
 let remove_track tr f =
    assert (Enum.is_empty (channels tr f));
    {f with tracks = Vect.filter ((<>) tr) f.tracks}
-
-let add_note ?channel t note f =
-   let c =
-      match channel with
-      | Some c -> c
-      | None -> assert false
-   in
-   ignore c;
-   f
-
-let enum_notes ?track f =
-   let e = Enum.empty () in
-   match track with
-   | Some t -> e // (fun (c, _) -> owns f t c)
-   | None -> e
 
 let channel_owner c {channel_usage} =
    let (t, n) = Vect.get channel_usage c in
@@ -115,8 +102,72 @@ let set_tvalue ct v (f, tr) =
 let volume = tvalue Ctrl.volume
 let set_volume = set_tvalue Ctrl.volume
 
-let get_note_ctrl (chan, note) ct f =
-   let cm = ctrl_map (chan, ct) f in
-   CtrlMap.get note.on_time cm
+let find_measure t measures =
+   MiscUtils.binary_search (fun i ->
+      let {start; len} = Vect.get measures i in
+      t < start + len
+   ) 0 (Vect.length measures)
+
+let add_note ?channel tr n f =
+   let c =
+      match channel with
+      | Some c -> c
+      | None -> assert false
+   in
+   let channel_usage =
+      Vect.modify f.channel_usage c (function
+         | _, 0 ->
+               tr, 1
+         | tr', n ->
+               if tr != tr' then
+                  failwith "channel conflict";
+               (tr, n + 1)
+      )
+   in
+   let measures =
+      let m = ref f.measures in
+      let t = ref (try (Vect.last !m).start with _ -> 0) in
+      while !t < n.off_time do
+         let l = CtrlMap.get !t f.timesig_map |> TimeSig.len f.division in
+         m := Vect.append {start = !t; len = l; notes = []} !m;
+         t := !t + l
+      done;
+      !m
+   in
+   let measures =
+      let s = find_measure n.on_time measures in
+      let e = find_measure (n.off_time - 1) measures in
+      let add m =
+         let note_compare (c1, n1) (c2, n2) =
+            let values c n = [n.on_time; n.off_time; n.midipitch; c] in
+            compare (values c1 n1) (values c2 n2)
+         in
+         let notes = List.sort ~cmp:note_compare ((c, n) :: m.notes) in
+         {m with notes}
+      in
+      Enum.fold (fun ms i -> Vect.modify ms i add) measures (s -- e)
+   in
+   let tvalues =
+      try
+         List.fold_left (fun tv ct ->
+            if PMap.mem (tr, ct) tv then
+               failwith "already have tvalues; nothing to do";
+            let cm = ctrl_map (c, ct) f in
+            PMap.add (tr, ct) (CtrlMap.get n.on_time cm) tv
+         ) f.tvalues Ctrl.tvalues
+      with _ -> f.tvalues
+   in
+   {f with channel_usage; measures; tvalues}
+
+let enum_notes ?track f =
+   let e =
+      let notes m =
+         List.enum m.notes // (fun (_, n) -> n.on_time >= m.start)
+      in
+      Vect.enum f.measures |> Enum.map notes |> Enum.flatten
+   in
+   match track with
+   | Some t -> e |> Enum.filter (fun (c, _) -> owns f t c)
+   | None -> e
 
 (* vim: set ts=3 sw=3 tw=80 : *)

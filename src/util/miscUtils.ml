@@ -29,4 +29,22 @@ let global_init g f =
       Global.set g (f ());
    Global.get g
 
+(** finds such x, i <= x <= j for which
+ *  f a is false for all a < x
+ *  and true for all a >= x,
+ *  assuming that it exists *)
+let rec binary_search f i j =
+   if i >= j then (
+      if f i then
+         i
+      else
+         i + 1
+   ) else (
+      let k = (i + j) / 2 in
+      if f k then
+         binary_search f i (k - 1)
+      else
+         binary_search f (k + 1) j
+   )
+
 (* vim: set ts=3 sw=3 tw=80 : *)

@@ -2,6 +2,7 @@ open OUnit
 
 let suites = "" >::: [
    BinaryHeapTest.tests;
+   BinarySearchTest.tests;
    CtrlMapTest.tests;
    ExportTest.tests;
    ImportTest.tests;

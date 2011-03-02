@@ -15,6 +15,8 @@ let create n d =
    n, lg d
 
 let numer (n, _) = n
-let denom (_, d) = d
+let denom (_, d) = 1 lsl d
+
+let len div ts = div * 4 * (numer ts) / (denom ts)
 
 (* vim: set ts=3 sw=3 tw=80 : *)

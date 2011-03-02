@@ -28,7 +28,7 @@ let test_simple_notes () =
    let events = List.of_enum (Export.export_events file) in
    let printer l =
       let print (time, track, ev) =
-         sprintf "%i" time
+         sprintf "%i %i" time track
       in
       List.map print l |> List.interleave "; " |> List.fold_left (^) ""
    in
