@@ -28,8 +28,8 @@ let parse_track_chunk chunk =
    in
    Enum.from_while get_event
 
-let default_velocity on_vel =
-   ignore on_vel;
+let default_velocity svel =
+   ignore svel;
    64
 
 let parse_chunks (input, inoffset) =
@@ -57,20 +57,20 @@ let parse_chunks (input, inoffset) =
 let import_events ?(division = 240) events =
    let file = ref (F.create division) in
    let notes = Array.init 16 (fun _ -> Array.make 128 None) in
-   let off channel midipitch off_time off_vel =
+   let off channel midipitch etime evel =
       match notes.(channel).(midipitch) with
       | None -> ()
-      | Some (tn, on_time, on_vel) ->
-            let off_vel =
-               if off_vel >= 0 then
-                  off_vel
+      | Some (tn, stime, svel) ->
+            let evel =
+               if evel >= 0 then
+                  evel
                else
-                  default_velocity on_vel
+                  default_velocity svel
             in
             let note = {
                midipitch;
-               on_time; on_vel;
-               off_time; off_vel;
+               stime; svel;
+               etime; evel;
                str = 0;
             } in
             file := F.add_note ~channel (F.track tn !file) note !file;

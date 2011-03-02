@@ -137,7 +137,7 @@ let add_note ?channel tr n f =
             m.start + m.len
          with _ -> 0
       ) in
-      while !t < n.off_time do
+      while !t < n.etime do
          let l = CtrlMap.get !t f.timesig_map |> TimeSig.len f.division in
          ms := Vect.append {start = !t; len = l; notes = []} !ms;
          t := !t + l
@@ -145,14 +145,14 @@ let add_note ?channel tr n f =
       !ms
    in
    let measures =
-      let s = find_measure n.on_time measures in
-      let e = find_measure (n.off_time - 1) measures in
+      let s = find_measure n.stime measures in
+      let e = find_measure (n.etime - 1) measures in
       let add m =
          let note_compare (c1, n1) (c2, n2) =
-            let values c n = [n.on_time; n.off_time; n.midipitch; c] in
+            let values c n = [n.stime; n.etime; n.midipitch; c] in
             compare (values c1 n1) (values c2 n2)
          in
-         assert (m.start < n.off_time && m.start + m.len >= n.on_time);
+         assert (m.start < n.etime && m.start + m.len >= n.stime);
          let notes = List.sort ~cmp:note_compare ((c, n) :: m.notes) in
          {m with notes}
       in
@@ -164,7 +164,7 @@ let add_note ?channel tr n f =
             if PMap.mem (tr, ct) tv then
                failwith "already have tvalues; nothing to do";
             let cm = ctrl_map (c, ct) f in
-            PMap.add (tr, ct) (CtrlMap.get n.on_time cm) tv
+            PMap.add (tr, ct) (CtrlMap.get n.stime cm) tv
          ) f.tvalues Ctrl.tvalues
       with _ -> f.tvalues
    in
@@ -173,7 +173,7 @@ let add_note ?channel tr n f =
 let enum_notes ?track f =
    let e =
       let notes m =
-         List.enum m.notes // (fun (_, n) -> n.on_time >= m.start)
+         List.enum m.notes // (fun (_, n) -> n.stime >= m.start)
       in
       (Vect.enum f.measures |> Enum.map notes |> Enum.flatten)
    in

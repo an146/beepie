@@ -2,7 +2,24 @@ open Batteries
 open GtkBase
 open GtkSugar
 open MidiFile
+open MidiNote
 open React
+
+let prerender f tracks m =
+   let s = m.start and e = m.start + m.len in
+   let notes () =
+      let f (c, _) = List.mem (F.channel_owner c f) tracks in
+      List.enum m.notes |> Enum.filter f
+   in
+   let parts =
+      Enum.fold (fun m (_, n) ->
+         let add x m = if s < x && x < e then PSet.add x m else m in
+         m |> add n.stime |> add n.etime
+      ) (PSet.singleton e) (notes ())
+   in
+   Enum.map (fun t ->
+      t, notes () // (fun (_, n) -> n.stime < t && t <= n.etime)
+   ) (PSet.enum parts)
 
 class file_widget initfile =
    let tracks_table = GPack.table () in
@@ -34,7 +51,7 @@ class file_widget initfile =
       method history_signal = hist_s
 
       method commit desc f =
-         (*if Player.file () == self#file then
+         (*if Player.file () == Some (self#file) then
             failwith "can't commit while playing";*)
          match self#history with
          (l, r) -> set_hist ((f, desc) :: l, [])

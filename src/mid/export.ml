@@ -24,9 +24,9 @@ type event =
 let event_time e =
    match e with
    | HeadTrackCmd (time, _) -> time
-   | Off (_, n) -> n.off_time
+   | Off (_, n) -> n.etime
    | Ctrl (_, _, (time, _)) -> time
-   | On (_, n) -> n.on_time
+   | On (_, n) -> n.stime
 
 let export_events file =
    let cctxs =
@@ -106,7 +106,7 @@ let export_events file =
       | Some (Off (c, n)) ->
             let ctx = cctx c in
             ctx.ons <- ctx.ons - 1;
-            [n.off_time, ctx.track, noteoff (c, n)]
+            [n.etime, ctx.track, noteoff (c, n)]
       | Some (Ctrl (ch, ct, (t, v))) ->
             let ctx = cctx ch in
             let cur_v = PMap.find ct ctx.ctrls_current in
@@ -122,7 +122,7 @@ let export_events file =
             )
       | Some (On (c, n)) ->
             let ctx = cctx c in
-            let time, track = n.on_time, ctx.track in
+            let time, track = n.stime, ctx.track in
             ctx.ons <- ctx.ons + 1;
             Enum.singleton (Off (c, n)) |> BinaryHeap.push heap;
             let oncmd = time, track, noteon (c, n) in

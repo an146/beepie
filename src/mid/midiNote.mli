@@ -1,9 +1,9 @@
 type note = {
    midipitch : int;
-   on_time   : int;
-   on_vel    : int;
-   off_time  : int;
-   off_vel   : int;
+   stime     : int;
+   svel      : int;
+   etime     : int;
+   evel      : int;
    mutable str : int;
 }
 
