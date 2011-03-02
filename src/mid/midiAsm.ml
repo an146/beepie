@@ -22,7 +22,7 @@ let note midipitch (stime, svel) (etime, evel) = {
    midipitch;
    stime; svel;
    etime; evel;
-   str = 0;
+   str = -1;
 }
 
 let tempo t = `Tempo t

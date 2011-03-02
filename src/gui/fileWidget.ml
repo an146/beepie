@@ -31,9 +31,6 @@ class file_widget initfile =
          scrolled_window [
             tab_area#coerce;
          ];
-         scrolled_window [
-            button "bla";
-         ];
       ]
    ] in
    let tracks_table_rows = Stack.create () in
@@ -42,6 +39,18 @@ class file_widget initfile =
       | (f, _) :: _, _ -> f
       | _ -> initfile
    ) in
+   let tracks_s, set_tracks = S.create [] in
+   let _ =
+      let s =
+         S.Pair.pair ~eq:(
+            fun (f, ts) (f', ts') -> f == f' && ts = ts'
+         ) file_s tracks_s
+      in
+      let up (f, ts) =
+         ()
+      in
+      attach_signal (S.trace up s) box
+   in
    object (self)
       inherit pseudo_widget box#coerce
 
@@ -95,9 +104,6 @@ class file_widget initfile =
                   let eq (f, t) (f', t') = f == f' && t = t' in
                   S.map ~eq (fun f -> f, F.track i f) file_s
                in
-               let track_s = track_s |> S.trace (fun ft ->
-                  Applicature.update ft [40; 45; 50; 55; 59; 64]
-               ) in
                let volume_s = S.map (F.volume) track_s in
                let set_volume v =
                   let ft = S.value track_s in
