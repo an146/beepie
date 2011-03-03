@@ -2,5 +2,6 @@ FILES[] =
    binaryHeap
    bst
    miscUtils
+   pool
 
 OCamlLibrary (libutil, $(FILES))
