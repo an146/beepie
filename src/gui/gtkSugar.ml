@@ -9,10 +9,24 @@ type widget = GObj.widget
 (** A basic Gtk+ window type *)
 type window = GWindow.window
 
-class pseudo_widget (w : widget) =
+class pseudo_widget (w : #GObj.widget) =
   object
-    method coerce = w
+    method coerce = w#coerce
     method get_oid = w#get_oid
+  end
+
+class type xwidget =
+  object
+    inherit GObj.widget
+    method event : GObj.event_ops
+    method misc : GObj.misc_ops
+  end
+
+class type adjwidget =
+  object
+    inherit GObj.widget
+    method hadjustment : GData.adjustment
+    method vadjustment : GData.adjustment
   end
 
 (** Cast everything to a simple widget form *)
@@ -48,41 +62,41 @@ let run windows =
 (** Queue up a widget for update.  Probably most useful in callbacks. *)
 let queue_draw widget = GtkBase.Widget.queue_draw (to_gtk_widget widget)
 
-(** Events support by this module.  Should be abstract. *)
-type event_callback_t =
-  | Any of (Gdk.Tags.event_type Gdk.event -> bool)
-  | Button_press of (GdkEvent.Button.t -> bool)
-  | Scroll of (GdkEvent.Scroll.t -> bool)
-  | Expose of (GdkEvent.Expose.t -> bool)
-  | Configure of (GdkEvent.Configure.t -> bool)
+let event_connect ?e connect w clb =
+  ignore (connect ~callback:(clb w));
+  Option.may (fun x -> w#event#add [x]) e
 
 (** User-visible functions to create callbacks for each event type *)
-let any_callback f x = Any (f x)
-let button_callback f x = Button_press (f x)
-let scroll_callback f x = Scroll (f x)
-let expose_callback f x = Expose (f x)
-let configure_callback f x = Configure (f x)
+let any_callback f w =
+  event_connect w#event#connect#any w f
+
+let button_callback f w =
+  event_connect ~e:`BUTTON_PRESS w#event#connect#button_press w f
+
+let scroll_callback f w =
+  event_connect ~e:`SCROLL w#event#connect#scroll w f
+
+let expose_callback f w =
+  event_connect ~e:`EXPOSURE w#event#connect#expose w f
+
+let configure_callback f w =
+  event_connect w#event#connect#configure w f
+
+let resize_callback f w =
+  event_connect w#misc#connect#size_allocate w f
+
+let adj_changed_callback f w a =
+  a#connect#value_changed ~callback:(fun () -> f w a) |> ignore
+
+let hadj_changed_callback f (w : #adjwidget) =
+  adj_changed_callback f w w#hadjustment
+
+let vadj_changed_callback f (w : #adjwidget) =
+  adj_changed_callback f w w#vadjustment
 
 (** HIDDEN - For use in connecting callbacks to events *)
-let connect_callback widget event_callback =
-  let connect = widget#event#connect in
-  (* Connect the callback to the event, ignoring the generated signal id *)
-  let f ?e_add e_connection e_callback =
-    ignore (e_connection ~callback:e_callback);
-    Option.may (fun x -> widget#event#add [x]) e_add;
-  in
-  match event_callback with
-  | Any a_f -> f connect#any a_f
-  | Button_press b_f -> f ~e_add:`BUTTON_PRESS connect#button_press b_f
-  | Scroll s_f -> f ~e_add:`SCROLL connect#scroll s_f
-  | Expose e_f -> f ~e_add:`EXPOSURE connect#expose e_f
-  | Configure c_f -> f connect#configure c_f
 let connect_callbacks ?callbacks widget =
-  Option.may (
-    fun callbacks ->
-      let callbacks = List.map (fun f -> f widget) callbacks in
-      List.iter (fun callback -> connect_callback widget callback) callbacks;
-  ) callbacks
+  Option.may (List.iter (fun f -> f widget)) callbacks
 
 (*
 (** Event box, for capturing input events *)
@@ -130,12 +144,19 @@ let layout ?callbacks layout_width layout_height =
   connect_callbacks ?callbacks layout;
   coerce layout
 
+(** Layout *)
+let canvas ?callbacks ?width ?height () =
+  let canvas = GnoCanvas.canvas ?width ?height () in
+  connect_callbacks ?callbacks canvas;
+  coerce canvas
+
 (** Scrolled window *)
-let scrolled_window ?g ?width ?height children =
-  let sw = GBin.scrolled_window ?width ?height () in
+let scrolled_window ?g ?callbacks ?hpolicy ?vpolicy ?width ?height children =
+  let sw = GBin.scrolled_window ?hpolicy ?vpolicy ?width ?height () in
   (match children with
   | c :: _ -> sw#add c
   | _ -> ());
+  connect_callbacks ?callbacks sw;
   setg g sw;
   coerce sw
 

@@ -4,53 +4,25 @@ open GtkSugar
 open MidiFile
 open MidiNote
 open React
-
-let prerender f tracks m =
-   let s = m.start and e = m.start + m.len in
-   let notes () =
-      let f (c, _) = List.mem (F.channel_owner c f) tracks in
-      List.enum m.notes |> Enum.filter f
-   in
-   let parts =
-      Enum.fold (fun m (_, n) ->
-         let add x m = if s < x && x < e then PSet.add x m else m in
-         m |> add n.stime |> add n.etime
-      ) (PSet.singleton e) (notes ())
-   in
-   Enum.map (fun t ->
-      t, notes () // (fun (_, n) -> n.stime < t && t <= n.etime)
-   ) (PSet.enum parts)
+open TabWidget
+module R = Gdk.Rectangle
 
 class file_widget initfile =
-   let tracks_table = GPack.table () in
-   let tab_area = GMisc.drawing_area () in
-   let box = vbox [
-      `fill,   tracks_table#coerce;
-      `fill,   separator `HORIZONTAL;
-      `expand, notebook ~show_tabs:false [
-         scrolled_window [
-            tab_area#coerce;
-         ];
-      ]
-   ] in
-   let tracks_table_rows = Stack.create () in
    let hist_s, set_hist = S.create ~eq:(==) ([], []) in
    let file_s = hist_s |> S.map ~eq:(==) (function
       | (f, _) :: _, _ -> f
       | _ -> initfile
    ) in
-   let tracks_s, set_tracks = S.create [] in
-   let _ =
-      let s =
-         S.Pair.pair ~eq:(
-            fun (f, ts) (f', ts') -> f == f' && ts = ts'
-         ) file_s tracks_s
-      in
-      let up (f, ts) =
-         ()
-      in
-      attach_signal (S.trace up s) box
-   in
+   let tracks_table = GPack.table () in
+   let tab = new tabwidget file_s in
+   let box = vbox [
+      `fill,   tracks_table#coerce;
+      `fill,   separator `HORIZONTAL;
+      `expand, notebook ~show_tabs:false [
+         tab#coerce
+      ]
+   ] in
+   let tracks_table_rows = Stack.create () in
    object (self)
       inherit pseudo_widget box#coerce
 

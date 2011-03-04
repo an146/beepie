@@ -8,7 +8,7 @@ type window = GWindow.window
 val to_gtk_widget : widget -> Gtk.widget Gtk.obj
 
 class pseudo_widget :
-  widget ->
+  #GObj.widget ->
   object
     method coerce : widget
     method get_oid : int
@@ -34,18 +34,39 @@ val run : window list -> unit
 (** Queue up a widget for update.  Probably most useful in callbacks. *)
 val queue_draw : widget -> unit
 
+class type xwidget =
+  object
+    inherit GObj.widget
+    method event : GObj.event_ops
+    method misc : GObj.misc_ops
+  end
+
 (** Event callbacks *)
-type event_callback_t
 val any_callback :
-  ('a -> Gdk.Tags.event_type Gdk.event -> bool) -> 'a -> event_callback_t
+  ((#xwidget as 'a) -> Gdk.Tags.event_type Gdk.event -> bool) -> 'a -> unit
 val button_callback :
-  ('a -> GdkEvent.Button.t -> bool) -> 'a -> event_callback_t
+  ((#xwidget as 'a) -> GdkEvent.Button.t -> bool) -> 'a -> unit
 val scroll_callback :
-  ('a -> GdkEvent.Scroll.t -> bool) -> 'a -> event_callback_t
+  ((#xwidget as 'a) -> GdkEvent.Scroll.t -> bool) -> 'a -> unit
 val expose_callback :
-  ('a -> GdkEvent.Expose.t -> bool) -> 'a -> event_callback_t
+  ((#xwidget as 'a) -> GdkEvent.Expose.t -> bool) -> 'a -> unit
 val configure_callback :
-  ('a -> GdkEvent.Configure.t -> bool) -> 'a -> event_callback_t
+  ((#xwidget as 'a) -> GdkEvent.Configure.t -> bool) -> 'a -> unit
+val resize_callback :
+  ((#xwidget as 'a) -> Gtk.rectangle -> unit) -> 'a -> unit
+
+class type adjwidget =
+  object
+    inherit GObj.widget
+    method hadjustment : GData.adjustment
+    method vadjustment : GData.adjustment
+  end
+
+val hadj_changed_callback :
+  ((#adjwidget as 'a) -> GData.adjustment -> unit) -> 'a -> unit
+
+val vadj_changed_callback :
+  ((#adjwidget as 'a) -> GData.adjustment -> unit) -> 'a -> unit
 
 type boxing_type = [`expand | `fill]
 
@@ -63,15 +84,25 @@ val button :
 
 (** Drawing area widget which can be used for custom widgets *)
 val drawing_area :
-  ?callbacks:(GMisc.drawing_area -> event_callback_t) list ->
+  ?callbacks:(GMisc.drawing_area -> unit) list ->
   int -> int -> widget
 
 val layout :
-  ?callbacks:(GPack.layout -> event_callback_t) list ->
+  ?callbacks:(GPack.layout -> unit) list ->
   int -> int -> widget
+
+val canvas :
+  ?callbacks:(GnoCanvas.canvas -> unit) list ->
+  ?width:int ->
+  ?height:int ->
+  unit ->
+  widget
 
 val scrolled_window :
   ?g:(GBin.scrolled_window Global.t) ->
+  ?callbacks:(GBin.scrolled_window -> unit) list ->
+  ?hpolicy:(Gtk.Tags.policy_type) ->
+  ?vpolicy:(Gtk.Tags.policy_type) ->
   ?width:int ->
   ?height:int ->
   widget list ->
