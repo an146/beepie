@@ -69,7 +69,9 @@ class file_widget initfile =
                      tracks_table#set_columns (j + 1);
                   tracks_table#attach ~left:j ~top:i ~expand w;
                in
-               let btn = button ~relief:`NONE in
+               let btn lbl clb = button ~relief:`NONE ~callbacks:[
+                  button_callback (fun _ _ -> clb (); false)
+               ] lbl in
                let sep () = `fill, separator `VERTICAL in
 
                let track_s =
@@ -83,15 +85,17 @@ class file_widget initfile =
                      self#commit "Set Volume" (F.set_volume v ft)
                in
                let row = [
-                  `fill,   btn (string_of_int (i + 1));
+                  `fill,   btn (string_of_int (i + 1)) (fun () -> 
+                     tab#set_tracks [S.value track_s |> snd]
+                  );
                   sep ();
-                  `fill,   btn "M";
+                  `fill,   btn "M" (fun () -> ());
                   sep ();
-                  `fill,   btn "S";
+                  `fill,   btn "S" (fun () -> ());
                   sep ();
-                  `expand, btn "Name";
+                  `expand, btn "Name" (fun () -> ());
                   sep ();
-                  `expand, btn "Instr";
+                  `expand, btn "Instr" (fun () -> ());
                   sep ();
                   `expand, slider ~signal:(S.map float_of_int volume_s)
                                   ~callback:(int_of_float |- set_volume)

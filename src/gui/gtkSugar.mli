@@ -78,6 +78,7 @@ val hbox :
   (boxing_type * widget) list -> widget
 
 val button :
+  ?callbacks:(GButton.button -> unit) list ->
   ?relief:Gtk.Tags.relief_style ->
   string ->
   widget

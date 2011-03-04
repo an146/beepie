@@ -28,6 +28,10 @@ let strings = [40; 45; 50; 55; 59; 64]
 
 let file tw = S.value tw.file_s
 
+let redraw tw =
+   tw.rendered <- PMap.empty;
+   queue_draw tw.cnv#coerce
+
 let prerender tw m =
    let s = m.start and e = m.start + m.len in
    let notes =
@@ -60,7 +64,8 @@ let update_mwidth tw =
          |> Enum.map Enum.count |> Enum.sum |> fl
       in
       2. +. if w > 0. then w else 1.
-   ) |> Enum.iter (DynArray.add tw.mwidth)
+   ) |> Enum.iter (DynArray.add tw.mwidth);
+   redraw tw
 
 let rows tw =
    if DynArray.empty tw.mwidth then
@@ -107,7 +112,6 @@ let expose tw r =
          let x = !rx in
          let x' = x +. w in
          if not (PMap.mem m tw.rendered) then (
-            Printf.printf "m: %i\n%!" m;
             let g = C.group ~x:(x *. stretch) ~y tw.cnv#root in
             ignore x';
             let _ =
@@ -123,13 +127,19 @@ let expose tw r =
    (*Printf.printf "e: %i %i\n%!" (R.y r) (R.width r);*)
    false
 
+let calc_height tw = (rows tw |> Enum.count |> fl) *. row_height tw
+
+let readjust_height tw =
+   let h = calc_height tw in
+   let r = tw.cnv#get_scroll_region in
+   tw.cnv#set_scroll_region ~x1:r.(0) ~y1:0. ~x2:r.(2) ~y2:h
+
 let resize tw {Gtk.width = rw} =
    PMap.iter (fun _ g -> g#destroy ()) tw.rendered;
    tw.rendered <- PMap.empty;
    let w = fl rw /. unitsize in
-   let h = (rows tw |> Enum.count |> fl) *. row_height tw in
-   tw.cnv#set_scroll_region ~x1:0. ~y1:0. ~x2:w ~y2:h;
-   Printf.printf "w: %i\n%!" rw
+   let h = calc_height tw in
+   tw.cnv#set_scroll_region ~x1:0. ~y1:0. ~x2:w ~y2:h
 
 let vscroll tw a =
    ()
@@ -163,6 +173,11 @@ class tabwidget file_s =
    let tw = create file_s in
    object (self)
       inherit pseudo_widget tw.sw
+
+      method set_tracks ts =
+         tw.tracks <- ts;
+         update_mwidth tw;
+         readjust_height tw
    end
 
 (* vim: set ts=3 sw=3 tw=80 : *)

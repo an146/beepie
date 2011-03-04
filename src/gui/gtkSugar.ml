@@ -128,8 +128,9 @@ let box f contents =
 let vbox = box GPack.vbox
 let hbox = box GPack.hbox
 
-let button ?relief label =
+let button ?callbacks ?relief label =
   let btn = GButton.button ?relief ~label () in
+  connect_callbacks ?callbacks btn;
   btn#coerce
 
 (** Drawing area *)
