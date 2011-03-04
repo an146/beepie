@@ -16,11 +16,11 @@ type tw = {
    mutable rendered: (int, C.group) PMap.t;
 }
 
-let unitsize = 15.0
+let unitsize = 40.0
 
 let fl x = float_of_int x
 
-let track_height = 15.0
+let track_height = 8.0
 
 let row_height tw = track_height *. (List.length tw.tracks |> fl)
 
@@ -29,6 +29,7 @@ let strings = [40; 45; 50; 55; 59; 64]
 let file tw = S.value tw.file_s
 
 let redraw tw =
+   PMap.iter (fun _ g -> g#destroy ()) tw.rendered;
    tw.rendered <- PMap.empty;
    queue_draw tw.cnv#coerce
 
@@ -52,7 +53,11 @@ let prerender tw m =
             n.stime < t && t <= n.etime && n.str = s
          )
       in
-      t, List.enum strings /@ snotes
+      let l =
+         List.enum strings |> Enum.map snotes
+         |> Enum.map Enum.hard_count |> Enum.fold max 0
+      in
+      t, l, List.enum strings /@ snotes
    ) (PSet.enum parts)
 
 let update_mwidth tw =
@@ -60,10 +65,10 @@ let update_mwidth tw =
    F.measures (file tw) |> Vect.enum |> Enum.map (fun m ->
       let w =
          prerender tw m
-         |> Enum.map snd |> Enum.flatten
-         |> Enum.map Enum.count |> Enum.sum |> fl
+         |> Enum.map (fun (_, l, _) -> l)
+         |> Enum.sum |> fl
       in
-      2. +. if w > 0. then w else 1.
+      if w > 0. then w else 1.
    ) |> Enum.iter (DynArray.add tw.mwidth);
    redraw tw
 
@@ -90,6 +95,16 @@ let rows tw =
       (i_start -- (!i - 1))
    )
 
+(*
+let make_anchor root ~x ~y =
+   let grp = GnoCanvas.group ~x ~y root in
+   GnoCanvas.rect grp ~props:[
+      `X1 (-0.2); `Y1 (-0.2); `X2 0.2; `Y2 0.2;
+      `OUTLINE_COLOR "black"; `WIDTH_PIXELS 0
+   ] |> ignore;
+   grp
+*)
+
 let expose tw r =
    let rh = row_height tw in
    let r1, r2 =
@@ -115,19 +130,39 @@ let expose tw r =
             let g = C.group ~x:(x *. stretch) ~y tw.cnv#root in
             ignore x';
             let _ =
-               C.rect ~x1:0. ~y1:0. ~x2:(w *. stretch) ~y2:rh ~fill_color:"red" g
-               ~props:[`OUTLINE_COLOR "black"]
+               C.rect ~x1:0. ~y1:0. ~x2:(w *. stretch) ~y2:rh g ~props:[
+                  `FILL_COLOR "white";
+                  `OUTLINE_COLOR "black";
+                  `WIDTH_PIXELS 0
+               ]
             in
+            let poffset = ref 0.5 in
+            prerender tw (Vect.get ms m)
+            |> Enum.iter (fun (t, l, ss) ->
+                  ss |> Enum.iter (Enum.iteri (fun i (_, n) ->
+                     let x = !poffset +. fl i in
+                     let y =
+                        let (i, _) = List.findi (fun _ s -> s = n.str) strings in
+                        rh -. fl i -. 0.5
+                     in
+                     GnoCanvas.text g ~props:[
+                        `TEXT (string_of_int (n.midipitch - n.str));
+                        `X (x *. stretch); `Y y; `FONT "Monospace bold 12";
+                        `ANCHOR `CENTER; `JUSTIFICATION `FILL;
+                        `FILL_COLOR "black"
+                     ] |> ignore
+                  ));
+                  poffset := !poffset +. fl l;
+            );
             tw.rendered <- PMap.add m g tw.rendered
          );
-         prerender tw (Vect.get ms m) |> ignore;
          rx := x'
       ) e
    );
    (*Printf.printf "e: %i %i\n%!" (R.y r) (R.width r);*)
    false
 
-let calc_height tw = (rows tw |> Enum.count |> fl) *. row_height tw
+let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
 
 let readjust_height tw =
    let h = calc_height tw in
@@ -135,8 +170,7 @@ let readjust_height tw =
    tw.cnv#set_scroll_region ~x1:r.(0) ~y1:0. ~x2:r.(2) ~y2:h
 
 let resize tw {Gtk.width = rw} =
-   PMap.iter (fun _ g -> g#destroy ()) tw.rendered;
-   tw.rendered <- PMap.empty;
+   redraw tw;
    let w = fl rw /. unitsize in
    let h = calc_height tw in
    tw.cnv#set_scroll_region ~x1:0. ~y1:0. ~x2:w ~y2:h
@@ -148,7 +182,7 @@ let vscroll tw a =
 let create file_s =
    let tw =
       let sw = GBin.scrolled_window ~hpolicy:`NEVER () in
-      let cnv = C.canvas ~packing:sw#add ~width:600 ~height:450 () in
+      let cnv = C.canvas ~aa:true ~packing:sw#add ~width:600 ~height:450 () in
       (*cnv#set_center_scroll_region false;*)
       cnv#set_pixels_per_unit unitsize;
       {
