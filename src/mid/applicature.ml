@@ -12,12 +12,29 @@ let weak_filter f e =
 
 let cartesian e e' =
    Enum.map (fun elt ->
-      Enum.map (fun elt' -> elt, elt') e'
-   ) e |> Enum.flatten
+      Enum.map (fun elt' -> elt, elt') (Enum.clone e')
+   ) (Enum.clone e) |> Enum.flatten
 
 let update (file, track) strings =
+   let astrings = Array.of_list strings in
    let string_choices note =
-      List.enum strings |> weak_filter ((>=) note.midipitch)
+      Array.sort (fun a b ->
+         let values x =
+            let fret = note.midipitch - x in
+            fret < 0, abs(fret)
+         in
+         compare (values a) (values b)
+      ) astrings;
+      (*
+      Printf.printf "note: %i\n" note.midipitch;
+      Array.iter print_int astrings;
+      print_endline "";
+      *)
+      Array.enum astrings
+      (*
+      |> Enum.map (tap (Printf.printf ":%i,%i:%!" note.midipitch))
+      |> tap (print_endline ""; ignore)
+      *)
    in
    let place apps (_, note) =
       let no_conflict ((a, fs), s) = List.mem s fs in
