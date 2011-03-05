@@ -29,6 +29,8 @@ let track_height = 8.0
 
 let row_height tw = track_height *. (List.length tw.tracks |> fl)
 
+let npadding = 0.2
+
 let strings = [40; 45; 50; 55; 59; 64]
 
 let file tw = S.value tw.file_s
@@ -70,20 +72,19 @@ let prerender tw m =
                let s = if not !first then ", " ^ s else s in
                first := false;
                let w = Font.string_measure font s |> wy in
-               let w' = max w 1.0 in
-               Some ((c, n), s, w', (w' -. w) /. 2.)
+               Some ((c, n), s, w)
             else
                None
          )
       in
       let get_snotes_len =
-         Enum.map (fun (_, _, l, _) -> l) |- Enum.fold (+.) 0.
+         Enum.map (fun (_, _, l) -> l) |- Enum.fold (+.) 0.
       in
       let l =
          List.enum strings |> Enum.map snotes
          |> Enum.map get_snotes_len |> Enum.fold max 0.
       in
-      t, l, List.enum strings /@ snotes
+      t, l +. 2. *. npadding, List.enum strings /@ snotes
    )
 
 let update_mwidth tw =
@@ -172,11 +173,11 @@ let expose tw r =
          and desc = Font.descent font |> wy in
          prerender tw (Vect.get ms m)
          |> Enum.iter (fun (t, l, ss) ->
-               ss |> Enum.iter (
+               ss |> Enum.iter (fun s ->
                   let soffset = ref 0. in
-                  Enum.iter (fun ((_, n), txt, w, pad) ->
+                  Enum.iter (fun ((_, n), txt, w) ->
                      let h = asc +. desc in
-                     let x = x +. !poffset +. !soffset +. pad in
+                     let x = x +. !poffset +. !soffset +. npadding in
                      let y =
                         let (i, _) = List.findi (fun _ s -> s = n.str) strings in
                         y +. rh -. fl i -. 0.5 +. h /. 2. -. desc
@@ -188,7 +189,7 @@ let expose tw r =
                      drawing#set_foreground (`NAME "red");
                      rect ~x ~y ~w ~h ()
                      *)
-                  )
+                  ) s
                );
                poffset := !poffset +. l;
          )
