@@ -1,4 +1,5 @@
 open Batteries
+open Gdk
 open GdkEvent
 open GtkSugar
 open MidiFile
@@ -7,18 +8,22 @@ open React
 module C = GnoCanvas
 module R = Gdk.Rectangle
 
+let font = Font.load "-*-lucidabright-medium-r-*-*-18-*-*-*-*-*-*-*"
+
 type tw = {
    file_s : file S.t;
    mutable tracks : track_id list;
    mwidth : float DynArray.t;
-   cnv : C.canvas;
+   tab : GPack.layout;
    sw : GBin.scrolled_window;
-   mutable rendered: (int, C.group) PMap.t;
 }
 
-let unitsize = 40.0
+let unitsize = 30.0
 
 let fl x = float_of_int x
+
+let cy y = truncate (y *. unitsize +. 0.5)
+let wy y = (fl y) /. unitsize
 
 let track_height = 8.0
 
@@ -29,9 +34,7 @@ let strings = [40; 45; 50; 55; 59; 64]
 let file tw = S.value tw.file_s
 
 let redraw tw =
-   PMap.iter (fun _ g -> g#destroy ()) tw.rendered;
-   tw.rendered <- PMap.empty;
-   queue_draw tw.cnv#coerce
+   queue_draw tw.tab#coerce
 
 let prerender tw m =
    let s = m.start and e = m.start + m.len in
@@ -45,20 +48,43 @@ let prerender tw m =
       Enum.fold (fun m (_, n) ->
          let add x m = if s < x && x < e then PSet.add x m else m in
          m |> add n.stime |> add n.etime
-      ) (PSet.singleton e) (List.enum notes)
+      ) (PSet.singleton s |> PSet.add e) (List.enum notes)
    in
-   Enum.map (fun t ->
+   let getpairs =
+      Enum.map (fun elt -> elt, elt)
+      |- Enum.scan (fun (px, _) (x, _) -> (x, px))
+      |- Enum.skip 1
+   in
+   PSet.enum parts
+   |> getpairs
+   |> Enum.map (fun (t, pt) ->
       let snotes s =
-         List.enum notes |> Enum.filter (fun (_, n) ->
-            n.stime < t && t <= n.etime && n.str = s
+         let first = ref true in
+         List.enum notes |> Enum.filter_map (fun (c, n) ->
+            if n.stime < t && t <= n.etime && n.str = s then
+               let f = n.midipitch - n.str in
+               let s = string_of_int f in
+               let s = if f < 0 then "(" ^ s ^ ")" else s in
+               let s = if n.stime < pt then "-" ^ s else s in
+               let s = if t < n.etime then s ^ "-" else s in
+               let s = if not !first then ", " ^ s else s in
+               first := false;
+               let w = Font.string_measure font s |> wy in
+               let w' = max w 1.0 in
+               Some ((c, n), s, w', (w' -. w) /. 2.)
+            else
+               None
          )
+      in
+      let get_snotes_len =
+         Enum.map (fun (_, _, l, _) -> l) |- Enum.fold (+.) 0.
       in
       let l =
          List.enum strings |> Enum.map snotes
-         |> Enum.map Enum.hard_count |> Enum.fold max 0
+         |> Enum.map get_snotes_len |> Enum.fold max 0.
       in
       t, l, List.enum strings /@ snotes
-   ) (PSet.enum parts)
+   )
 
 let update_mwidth tw =
    DynArray.clear tw.mwidth;
@@ -66,8 +92,9 @@ let update_mwidth tw =
       let w =
          prerender tw m
          |> Enum.map (fun (_, l, _) -> l)
-         |> Enum.sum |> fl
+         |> Enum.fold (+.) 0.
       in
+      (*Printf.printf "m: %i, %f\n%!" m.start w;*)
       if w > 0. then w else 1.
    ) |> Enum.iter (DynArray.add tw.mwidth);
    redraw tw
@@ -75,7 +102,7 @@ let update_mwidth tw =
 let rows tw =
    if DynArray.empty tw.mwidth then
       update_mwidth tw;
-   let w = fl tw.cnv#width /. unitsize in
+   let w = fl tw.tab#width /. unitsize in
    let i = ref 0 in
    Enum.from (fun () ->
       let s = ref 0. in
@@ -83,7 +110,7 @@ let rows tw =
       (try
          while !s < w do
             let ns = !s +. DynArray.get tw.mwidth !i in
-            if ns > w then
+            if ns > w && !s > 0. then
                failwith "it's enough";
             s := ns;
             incr i
@@ -111,6 +138,11 @@ let expose tw r =
       let row y = truncate (fl y /. unitsize /. rh) in
       row (R.y r), row (R.y r + R.height r)
    in
+   let drawing = new GDraw.drawable tw.tab#bin_window in
+   (* Background *)
+   drawing#set_foreground (`RGB (0xffff, 0xffff, 0xd000));
+   drawing#rectangle ~filled:true ~x:(R.x r) ~y:(R.y r)
+                     ~width:(R.width r) ~height:(R.height r) ();
    Enum.combine (rows tw, (0 -- max_int))
    |> Enum.skip r1
    |> Enum.take (r2 - r1 + 1)
@@ -119,44 +151,47 @@ let expose tw r =
       let rwidth =
          Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+.)
       in
-      let stretch = (fl tw.cnv#width /. unitsize) /. rwidth in
+      let xunitsize = (fl tw.tab#width) /. rwidth in
       let rx = ref 0. in
       let ms = F.measures (file tw) in
+      let cx x = truncate (x *. xunitsize +. 0.5) in
+      let rect ?filled ~x ~y ~w ~h () =
+         drawing#rectangle ~x:(cx x)
+                           ~y:(cy y)
+                           ~width:(cx w)
+                           ~height:(cy h)
+                           ?filled ()
+      in
       Enum.iter (fun m ->
-         let w = DynArray.get tw.mwidth m in
-         let x = !rx in
-         let x' = x +. w in
-         if not (PMap.mem m tw.rendered) then (
-            let g = C.group ~x:(x *. stretch) ~y tw.cnv#root in
-            ignore x';
-            let _ =
-               C.rect ~x1:0. ~y1:0. ~x2:(w *. stretch) ~y2:rh g ~props:[
-                  `FILL_COLOR "white";
-                  `OUTLINE_COLOR "black";
-                  `WIDTH_PIXELS 0
-               ]
-            in
-            let poffset = ref 0.5 in
-            prerender tw (Vect.get ms m)
-            |> Enum.iter (fun (t, l, ss) ->
-                  ss |> Enum.iter (Enum.iteri (fun i (_, n) ->
-                     let x = !poffset +. fl i in
+         let x = !rx and w = DynArray.get tw.mwidth m in
+         rx := x +. w;
+         let poffset = ref 0. in
+         drawing#set_foreground `BLACK;
+         rect ~x ~y ~w ~h:rh ();
+         let asc = Font.ascent font |> wy
+         and desc = Font.descent font |> wy in
+         prerender tw (Vect.get ms m)
+         |> Enum.iter (fun (t, l, ss) ->
+               ss |> Enum.iter (
+                  let soffset = ref 0. in
+                  Enum.iter (fun ((_, n), txt, w, pad) ->
+                     let h = asc +. desc in
+                     let x = x +. !poffset +. !soffset +. pad in
                      let y =
                         let (i, _) = List.findi (fun _ s -> s = n.str) strings in
-                        rh -. fl i -. 0.5
+                        y +. rh -. fl i -. 0.5 +. h /. 2. -. desc
                      in
-                     GnoCanvas.text g ~props:[
-                        `TEXT (string_of_int (n.midipitch - n.str));
-                        `X (x *. stretch); `Y y; `FONT "Monospace bold 12";
-                        `ANCHOR `CENTER; `JUSTIFICATION `FILL;
-                        `FILL_COLOR "black"
-                     ] |> ignore
-                  ));
-                  poffset := !poffset +. fl l;
-            );
-            tw.rendered <- PMap.add m g tw.rendered
-         );
-         rx := x'
+                     drawing#set_foreground `BLACK;
+                     drawing#string txt ~font:font ~x:(cx x) ~y:(cy y);
+                     soffset := !soffset +. w
+                     (*
+                     drawing#set_foreground (`NAME "red");
+                     rect ~x ~y ~w ~h ()
+                     *)
+                  )
+               );
+               poffset := !poffset +. l;
+         )
       ) e
    );
    (*Printf.printf "e: %i %i\n%!" (R.y r) (R.width r);*)
@@ -165,42 +200,37 @@ let expose tw r =
 let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
 
 let readjust_height tw =
-   let h = calc_height tw in
-   let r = tw.cnv#get_scroll_region in
-   tw.cnv#set_scroll_region ~x1:r.(0) ~y1:0. ~x2:r.(2) ~y2:h
+   tw.tab#set_height (calc_height tw *. unitsize |> truncate)
 
 let resize tw {Gtk.width = rw} =
-   redraw tw;
+   tw.tab#set_width rw;
+   readjust_height tw;
+   redraw tw
+   (*
    let w = fl rw /. unitsize in
    let h = calc_height tw in
-   tw.cnv#set_scroll_region ~x1:0. ~y1:0. ~x2:w ~y2:h
+   tw.tab#set_width (truncate w);
+   tw.tab#set_height (truncate h)
+   *)
 
 let vscroll tw a =
    ()
-   (*Printf.printf "y: %f\n%!" a#value*)
 
 let create file_s =
    let tw =
       let sw = GBin.scrolled_window ~hpolicy:`NEVER () in
-      let cnv = C.canvas ~aa:true ~packing:sw#add ~width:600 ~height:450 () in
-      (*cnv#set_center_scroll_region false;*)
-      cnv#set_pixels_per_unit unitsize;
+      let tab = GPack.layout ~packing:sw#add () in
       {
          file_s;
          tracks = [1002] |> Obj.magic;
          mwidth = DynArray.create ();
-         cnv;
          sw;
-         rendered = PMap.empty;
+         tab;
       }
    in
-   (*GnoCanvas.rect tw.cnv#root
-      ~props:[ `X1 0.; `Y1 0.; `X2 600.; `Y2 450. ;
-      `OUTLINE_COLOR "black" ; `WIDTH_UNITS 4. ] |> ignore;
-      *)
-   expose_callback (fun _ ev -> expose tw (Expose.area ev)) tw.cnv;
-   resize_callback (fun _ r -> resize tw r) tw.cnv;
-   vadj_changed_callback (fun _ a -> vscroll tw a) tw.cnv;
+   expose_callback (fun _ ev -> expose tw (Expose.area ev)) tw.tab;
+   resize_callback (fun _ r -> resize tw r) tw.tab;
+   vadj_changed_callback (fun _ a -> vscroll tw a) tw.tab;
    tw
 
 class tabwidget file_s =
