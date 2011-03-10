@@ -17,16 +17,16 @@ type channel_ctx = {
 type event =
    (* order matters, the priority of events is determined by compare *)
    | HeadTrackCmd of (int * MidiCmd.t)
-   | Off of (int * note)
+   | Off of note
    | Ctrl of int * Ctrl.t * (int * int)
-   | On of (int * note)
+   | On of note
 
 let event_time e =
    match e with
    | HeadTrackCmd (time, _) -> time
-   | Off (_, n) -> n.etime
+   | Off n -> n.etime
    | Ctrl (_, _, (time, _)) -> time
-   | On (_, n) -> n.stime
+   | On n -> n.stime
 
 let export_events file =
    let cctxs =
@@ -69,9 +69,9 @@ let export_events file =
    let event_track = function
       | HeadTrackCmd (time, _) ->
             -1
-      | Off (c, _)
+      | Off {channel = c}
       | Ctrl (c, _, _)
-      | On (c, _) ->
+      | On {channel = c} ->
             (cctx c).track
    in
    let e_cmp e1 e2 =
@@ -103,10 +103,10 @@ let export_events file =
          BinaryHeap.reorder_top heap;
       match ev with
       | None -> assert false
-      | Some (Off (c, n)) ->
-            let ctx = cctx c in
+      | Some (Off n) ->
+            let ctx = cctx n.channel in
             ctx.ons <- ctx.ons - 1;
-            [n.etime, ctx.track, noteoff (c, n)]
+            [n.etime, ctx.track, noteoff n]
       | Some (Ctrl (ch, ct, (t, v))) ->
             let ctx = cctx ch in
             let cur_v = PMap.find ct ctx.ctrls_current in
@@ -120,14 +120,14 @@ let export_events file =
                ctx.ctrls_current <- PMap.add ct v ctx.ctrls_current;
                [t, ctx.track, ctrl2 ch ct v]
             )
-      | Some (On (c, n)) ->
-            let ctx = cctx c in
+      | Some (On n) ->
+            let ctx = cctx n.channel in
             let time, track = n.stime, ctx.track in
             ctx.ons <- ctx.ons + 1;
-            Enum.singleton (Off (c, n)) |> BinaryHeap.push heap;
-            let oncmd = time, track, noteon (c, n) in
+            Enum.singleton (Off n) |> BinaryHeap.push heap;
+            let oncmd = time, track, noteon n in
             if ctx.ons = 1 then
-               let ctrl_cmd (ct, v) = time, track, ctrl2 c ct v in
+               let ctrl_cmd (ct, v) = time, track, ctrl2 n.channel ct v in
                let ctrl_cmds = PMap.enum ctx.ctrls_cached /@ ctrl_cmd in
                ctx.ctrls_cached <- PMap.empty;
                List.append (List.of_enum ctrl_cmds) [oncmd]

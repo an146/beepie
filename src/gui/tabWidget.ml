@@ -42,12 +42,12 @@ let prerender tw m =
    let s = m.start and e = m.start + m.len in
    let notes =
       let f = file tw in
-      List.filter (fun (c, _) ->
-         List.mem (F.channel_owner c f |> Option.get) tw.tracks
+      List.filter (fun n ->
+         List.mem (F.channel_owner n.channel f |> Option.get) tw.tracks
       ) m.notes
    in
    let parts =
-      Enum.fold (fun m (_, n) ->
+      Enum.fold (fun m n ->
          let add x m = if s < x && x < e then PSet.add x m else m in
          m |> add n.stime |> add n.etime
       ) (PSet.singleton s |> PSet.add e) (List.enum notes)
@@ -62,7 +62,7 @@ let prerender tw m =
    |> Enum.map (fun (t, pt) ->
       let snotes s =
          let first = ref true in
-         List.enum notes |> Enum.filter_map (fun (c, n) ->
+         List.enum notes |> Enum.filter_map (fun n ->
             if n.stime < t && t <= n.etime && n.str = s then
                let f = n.midipitch - n.str in
                let s = string_of_int f in
@@ -72,7 +72,7 @@ let prerender tw m =
                let s = if not !first then ", " ^ s else s in
                first := false;
                let w = Font.string_measure font s |> wy in
-               Some ((c, n), s, w)
+               Some (n, s, w)
             else
                None
          )
@@ -175,7 +175,7 @@ let expose tw r =
          |> Enum.iter (fun (t, l, ss) ->
                ss |> Enum.iter (fun s ->
                   let soffset = ref 0. in
-                  Enum.iter (fun ((_, n), txt, w) ->
+                  Enum.iter (fun (n, txt, w) ->
                      let h = asc +. desc in
                      let x = x +. !poffset +. !soffset +. npadding in
                      let y =

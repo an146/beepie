@@ -9,8 +9,8 @@ let chpressure c a    = `ChannelPressure (c, a)
 let pitchwheel c a    = `PitchWheel      (c, a)
 
 let pitchwheel2 c a b = pitchwheel c (a * 0x80 + b)
-let noteoff (c, n)    = off c n.midipitch n.evel
-let noteon (c, n)     = on c n.midipitch n.svel
+let noteoff n         = off n.channel n.midipitch n.evel
+let noteon n          = on n.channel n.midipitch n.svel
 
 let ctrl2 ch ctrltype v =
    match ctrltype with
@@ -18,7 +18,8 @@ let ctrl2 ch ctrltype v =
    | Ctrl.PitchWheel -> pitchwheel ch v
    | Ctrl.Controller c -> ctrl ch c v
 
-let note midipitch (stime, svel) (etime, evel) = {
+let note ?(channel = -1) midipitch (stime, svel) (etime, evel) = {
+   channel;
    midipitch;
    stime; svel;
    etime; evel;

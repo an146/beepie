@@ -1,4 +1,5 @@
 type note = {
+   channel   : int;
    midipitch : int;
    stime     : int;
    svel      : int;

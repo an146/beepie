@@ -6,7 +6,7 @@ type track_id = private int
 type measure = {
    start : int;
    len : int;
-   notes : (int * note) list;
+   notes : note list;
 }
 
 type file
@@ -27,8 +27,8 @@ module F : sig
    val channel_owner : int -> t -> track_id option
 
    val measures : t -> measure Vect.t
-   val add_note : ?channel:int -> track_id -> note -> t -> t
-   val enum_notes : ?track:track_id -> t -> (int * note) Enum.t
+   val add_note : track_id -> note -> t -> t
+   val enum_notes : ?track:track_id -> t -> note Enum.t
 
    val ctrl_map : (int * Ctrl.t) -> t -> int CtrlMap.t
    val set_ctrl_map : (int * Ctrl.t) -> int CtrlMap.t -> t -> t

@@ -36,7 +36,7 @@ let update (file, track) strings =
       |> tap (print_endline ""; ignore)
       *)
    in
-   let place apps (_, note) =
+   let place apps note =
       let no_conflict ((a, fs), s) = List.mem s fs in
       let apply ((a, fs), s) = (note, s) :: a, List.filter ((!=) s) fs in
       cartesian apps (string_choices note)

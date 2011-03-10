@@ -26,10 +26,10 @@ let test_simple_notes () =
    let notes =
       [
          [
-            0, note 0 (0, 64) (100, Import.default_velocity 64);
-            0, note 0 (100, 127) (200, Import.default_velocity 127);
-            1, note 2 (200, 32) (300, 65);
-            1, note 3 (200, 100) (400, 100);
+            note ~channel:0 0 (0, 64) (100, Import.default_velocity 64);
+            note ~channel:0 0 (100, 127) (200, Import.default_velocity 127);
+            note ~channel:1 2 (200, 32) (300, 65);
+            note ~channel:1 3 (200, 100) (400, 100);
          ];
          [
          ]

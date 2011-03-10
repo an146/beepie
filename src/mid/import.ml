@@ -68,12 +68,13 @@ let import_events ?(division = 240) ?(appl = true) events =
                   default_velocity svel
             in
             let note = {
+               channel;
                midipitch;
                stime; svel;
                etime; evel;
                str = -1;
             } in
-            file := F.add_note ~channel (F.track tn !file) note !file;
+            file := F.add_note (F.track tn !file) note !file;
             notes.(channel).(midipitch) <- None
    in
    let ctrl c t time v =

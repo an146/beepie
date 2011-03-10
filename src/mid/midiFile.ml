@@ -9,7 +9,7 @@ type track_id = int
 type measure = {
    start : int;
    len : int;
-   notes : (int * note) list;
+   notes : note list;
 }
 
 type file = {
@@ -113,14 +113,10 @@ let find_measure t measures =
       t < start + len
    ) 0 (Vect.length measures)
 
-let add_note ?channel tr n f =
-   let c =
-      match channel with
-      | Some c -> c
-      | None -> assert false
-   in
+let add_note tr n f =
+   assert (n.channel >= 0 && n.channel < 16);
    let channel_usage =
-      Vect.modify f.channel_usage c (function
+      Vect.modify f.channel_usage n.channel (function
          | _, 0 ->
                tr, 1
          | tr', n ->
@@ -148,12 +144,12 @@ let add_note ?channel tr n f =
       let s = find_measure n.stime measures in
       let e = find_measure (n.etime - 1) measures in
       let add m =
-         let note_compare (c1, n1) (c2, n2) =
-            let values c n = [n.stime; n.etime; n.midipitch; c] in
-            compare (values c1 n1) (values c2 n2)
+         let note_compare n1 n2 =
+            let values n = [n.stime; n.etime; n.midipitch; n.channel] in
+            compare (values n1) (values n2)
          in
          assert (m.start < n.etime && m.start + m.len >= n.stime);
-         let notes = List.sort ~cmp:note_compare ((c, n) :: m.notes) in
+         let notes = List.sort ~cmp:note_compare (n :: m.notes) in
          {m with notes}
       in
       Enum.fold (fun ms i -> Vect.modify ms i add) measures (s -- e)
@@ -163,7 +159,7 @@ let add_note ?channel tr n f =
          List.fold_left (fun tv ct ->
             if PMap.mem (tr, ct) tv then
                failwith "already have tvalues; nothing to do";
-            let cm = ctrl_map (c, ct) f in
+            let cm = ctrl_map (n.channel, ct) f in
             PMap.add (tr, ct) (CtrlMap.get n.stime cm) tv
          ) f.tvalues Ctrl.tvalues
       with _ -> f.tvalues
@@ -173,12 +169,12 @@ let add_note ?channel tr n f =
 let enum_notes ?track f =
    let e =
       let notes m =
-         List.enum m.notes // (fun (_, n) -> n.stime >= m.start)
+         List.enum m.notes // (fun n -> n.stime >= m.start)
       in
       (Vect.enum f.measures |> Enum.map notes |> Enum.flatten)
    in
    match track with
-   | Some t -> e |> Enum.filter (fun (c, _) -> owns f t c)
+   | Some t -> e |> Enum.filter (fun n -> owns f t n.channel)
    | None -> e
 
 end (* module F *)
