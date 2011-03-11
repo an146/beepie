@@ -9,6 +9,7 @@ FILES[] =
    midiFile
    midiIo
    player
+   tabRender
    timeSig
    varlen
 

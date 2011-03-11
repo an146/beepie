@@ -39,6 +39,7 @@ let redraw tw =
    queue_draw tw.tab#coerce
 
 let prerender tw m =
+   let _ = TabRender.render_measure (file tw) tw.tracks m in
    let s = m.start and e = m.start + m.len in
    let notes =
       let f = file tw in

@@ -47,4 +47,7 @@ let rec binary_search f i j =
          binary_search f (k + 1) j
    )
 
+let enum_group2 f e =
+   Enum.group (Enum.change_flip f) e
+
 (* vim: set ts=3 sw=3 tw=80 : *)
