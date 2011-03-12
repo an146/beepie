@@ -7,7 +7,7 @@ type elt_value = [
    | `Note of note
 ]
 
-type tabx = int * int (* chars * spaces *)
+type tabx = float * float (* chars * spaces *)
 
 val (+:) : tabx -> tabx -> tabx
 val tabx_max : tabx -> tabx -> tabx

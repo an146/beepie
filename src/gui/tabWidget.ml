@@ -46,18 +46,17 @@ let update_mwidth tw =
       let w =
          render_measure f tw.tracks m
          |> Enum.map (fun elt -> elt.x)
-         |> Enum.fold tabx_max (0, 0)
+         |> Enum.fold tabx_max (0., 0.)
       in
       (* measure delimiting space *)
-      w +: (0, 2)
+      w +: (0., 2.)
    ) |> Enum.iter (DynArray.add tw.mwidth);
    redraw tw
 
 let calc_space_size tw (w_chars, w_spaces) =
-   let w_spaces = w_spaces in
    let charsize = unitsize in
    let w = fl tw.tab#width /. charsize in
-   (w -. fl w_chars) /. fl w_spaces
+   (w -. w_chars) /. w_spaces
 
 let rows tw =
    if DynArray.empty tw.mwidth then
@@ -112,10 +111,10 @@ let expose tw r =
          Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
       in
       let ssize = calc_space_size tw rwidth in
-      let rx = ref (0, 0) in
+      let rx = ref (0., 0.) in
       let ms = F.measures (file tw) in
       Printf.printf "ssize: %f\n%!" ssize;
-      let cx (c, s) = (fl c +. fl s *. ssize) *. unitsize +. 0.5 |> truncate in
+      let cx (c, s) = (c +. s *. ssize) *. unitsize +. 0.5 |> truncate in
       let rect ?filled ~x ~y ~w ~h () =
          drawing#rectangle ~x:(cx x)
                            ~y:(cy y)
@@ -137,7 +136,7 @@ let expose tw r =
          render_measure (file tw) tw.tracks (Vect.get ms m)
          |> Enum.iter (fun elt ->
             let h = asc +. desc in
-            let x = x +: (0, 1) +: elt.x in
+            let x = x +: (0., 1.) +: elt.x in
             let y =
                y +. rh -. fl elt.y -. 0.5 +. h /. 2. -. desc
             in
