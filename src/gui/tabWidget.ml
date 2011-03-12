@@ -5,6 +5,7 @@ open GtkSugar
 open MidiFile
 open MidiNote
 open React
+open TabRender
 module C = GnoCanvas
 module R = Gdk.Rectangle
 
@@ -13,7 +14,7 @@ let font = Font.load "-*-lucidabright-medium-r-*-*-18-*-*-*-*-*-*-*"
 type tw = {
    file_s : file S.t;
    mutable tracks : track_id list;
-   mwidth : float DynArray.t;
+   mwidth : tabx DynArray.t;
    tab : GPack.layout;
    sw : GBin.scrolled_window;
 }
@@ -38,101 +39,58 @@ let file tw = S.value tw.file_s
 let redraw tw =
    queue_draw tw.tab#coerce
 
-let prerender tw m =
-   let _ = TabRender.render_measure (file tw) tw.tracks m in
-   let s = m.start and e = m.start + m.len in
-   let notes =
-      let f = file tw in
-      List.filter (fun n ->
-         List.mem (F.channel_owner n.channel f |> Option.get) tw.tracks
-      ) m.notes
-   in
-   let parts =
-      Enum.fold (fun m n ->
-         let add x m = if s < x && x < e then PSet.add x m else m in
-         m |> add n.stime |> add n.etime
-      ) (PSet.singleton s |> PSet.add e) (List.enum notes)
-   in
-   let getpairs =
-      Enum.map (fun elt -> elt, elt)
-      |- Enum.scan (fun (px, _) (x, _) -> (x, px))
-      |- Enum.skip 1
-   in
-   PSet.enum parts
-   |> getpairs
-   |> Enum.map (fun (t, pt) ->
-      let snotes s =
-         let first = ref true in
-         List.enum notes |> Enum.filter_map (fun n ->
-            if n.stime < t && t <= n.etime && n.str = s then
-               let f = n.midipitch - n.str in
-               let s = string_of_int f in
-               let s = if f < 0 then "(" ^ s ^ ")" else s in
-               let s = if n.stime < pt then "-" ^ s else s in
-               let s = if t < n.etime then s ^ "-" else s in
-               let s = if not !first then ", " ^ s else s in
-               first := false;
-               let w = Font.string_measure font s |> wy in
-               Some (n, s, w)
-            else
-               None
-         )
-      in
-      let get_snotes_len =
-         Enum.map (fun (_, _, l) -> l) |- Enum.fold (+.) 0.
-      in
-      let l =
-         List.enum strings |> Enum.map snotes
-         |> Enum.map get_snotes_len |> Enum.fold max 0.
-      in
-      t, l +. 2. *. npadding, List.enum strings /@ snotes
-   )
-
 let update_mwidth tw =
+   let f = file tw in
    DynArray.clear tw.mwidth;
-   F.measures (file tw) |> Vect.enum |> Enum.map (fun m ->
+   F.measures f |> Vect.enum |> Enum.map (fun m ->
       let w =
-         prerender tw m
-         |> Enum.map (fun (_, l, _) -> l)
-         |> Enum.fold (+.) 0.
+         render_measure f tw.tracks m
+         |> Enum.map (fun elt -> elt.x)
+         |> Enum.fold tabx_max (0, 0)
       in
-      (*Printf.printf "m: %i, %f\n%!" m.start w;*)
-      if w > 0. then w else 1.
+      (* measure delimiting space *)
+      w +: (0, 2)
    ) |> Enum.iter (DynArray.add tw.mwidth);
    redraw tw
+
+let calc_space_size tw (w_chars, w_spaces) =
+   let w_spaces = w_spaces in
+   let charsize = unitsize in
+   let w = fl tw.tab#width /. charsize in
+   (w -. fl w_chars) /. fl w_spaces
 
 let rows tw =
    if DynArray.empty tw.mwidth then
       update_mwidth tw;
-   let w = fl tw.tab#width /. unitsize in
+   let mwidth i = DynArray.get tw.mwidth i in
    let i = ref 0 in
    Enum.from (fun () ->
-      let s = ref 0. in
-      let i_start = !i in
+      let q = Queue.create () in
+      let push () =
+         Queue.push !i q;
+         incr i;
+      in
       (try
-         while !s < w do
-            let ns = !s +. DynArray.get tw.mwidth !i in
-            if ns > w && !s > 0. then
+         let s = ref (mwidth !i) in
+         push ();
+         while true do
+            let s' = !s +: mwidth !i in
+            let penalty s =
+               let ssize = calc_space_size tw s in
+               Float.abs (1.0 -. ssize)
+               +. (if ssize < 0.5 then 10.0 else 0.0)
+            in
+            if penalty s' > penalty !s then
                failwith "it's enough";
-            s := ns;
-            incr i
-         done;
+            s := s';
+            push ()
+         done
       with _ -> ());
-      if !s <= 0. then
-         raise Enum.No_more_elements;
-      assert (!i > i_start);
-      (i_start -- (!i - 1))
+      if Queue.is_empty q then
+         raise Enum.No_more_elements
+      else
+         Queue.enum q
    )
-
-(*
-let make_anchor root ~x ~y =
-   let grp = GnoCanvas.group ~x ~y root in
-   GnoCanvas.rect grp ~props:[
-      `X1 (-0.2); `Y1 (-0.2); `X2 0.2; `Y2 0.2;
-      `OUTLINE_COLOR "black"; `WIDTH_PIXELS 0
-   ] |> ignore;
-   grp
-*)
 
 let expose tw r =
    let rh = row_height tw in
@@ -151,12 +109,13 @@ let expose tw r =
    |> Enum.iter (fun (e, i) ->
       let y = fl i *. rh in
       let rwidth =
-         Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+.)
+         Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
       in
-      let xunitsize = (fl tw.tab#width) /. rwidth in
-      let rx = ref 0. in
+      let ssize = calc_space_size tw rwidth in
+      let rx = ref (0, 0) in
       let ms = F.measures (file tw) in
-      let cx x = truncate (x *. xunitsize +. 0.5) in
+      Printf.printf "ssize: %f\n%!" ssize;
+      let cx (c, s) = (fl c +. fl s *. ssize) *. unitsize +. 0.5 |> truncate in
       let rect ?filled ~x ~y ~w ~h () =
          drawing#rectangle ~x:(cx x)
                            ~y:(cy y)
@@ -166,33 +125,28 @@ let expose tw r =
       in
       Enum.iter (fun m ->
          let x = !rx and w = DynArray.get tw.mwidth m in
-         rx := x +. w;
-         let poffset = ref 0. in
+         rx := x +: w;
+         (*
+         drawing#set_foreground (`NAME "red");
+         rect ~filled:true ~x ~y ~w ~h:rh ();
+         *)
          drawing#set_foreground `BLACK;
          rect ~x ~y ~w ~h:rh ();
          let asc = Font.ascent font |> wy
          and desc = Font.descent font |> wy in
-         prerender tw (Vect.get ms m)
-         |> Enum.iter (fun (t, l, ss) ->
-               ss |> Enum.iter (fun s ->
-                  let soffset = ref 0. in
-                  Enum.iter (fun (n, txt, w) ->
-                     let h = asc +. desc in
-                     let x = x +. !poffset +. !soffset +. npadding in
-                     let y =
-                        let (i, _) = List.findi (fun _ s -> s = n.str) strings in
-                        y +. rh -. fl i -. 0.5 +. h /. 2. -. desc
-                     in
-                     drawing#set_foreground `BLACK;
-                     drawing#string txt ~font:font ~x:(cx x) ~y:(cy y);
-                     soffset := !soffset +. w
-                     (*
-                     drawing#set_foreground (`NAME "red");
-                     rect ~x ~y ~w ~h ()
-                     *)
-                  ) s
-               );
-               poffset := !poffset +. l;
+         render_measure (file tw) tw.tracks (Vect.get ms m)
+         |> Enum.iter (fun elt ->
+            let h = asc +. desc in
+            let x = x +: (0, 1) +: elt.x in
+            let y =
+               y +. rh -. fl elt.y -. 0.5 +. h /. 2. -. desc
+            in
+            drawing#set_foreground `BLACK;
+            drawing#string elt.text ~font:font ~x:(cx x) ~y:(cy y);
+            (*
+            drawing#set_foreground (`NAME "red");
+            rect ~x ~y ~w ~h ()
+            *)
          )
       ) e
    );

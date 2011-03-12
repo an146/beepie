@@ -7,9 +7,13 @@ type elt_value = [
    | `Note of note
 ]
 
+type tabx = int * int (* chars * spaces *)
+
+val (+:) : tabx -> tabx -> tabx
+val tabx_max : tabx -> tabx -> tabx
+
 type elt = {
-   x_chars : int;
-   x_spaces : int;
+   x : tabx;
    y : int;
    track : track_id;
    text : string;
