@@ -54,6 +54,7 @@ let render_measure f tracks m =
          let note_elt n =
             let txt =
                let s = Printf.sprintf "%i" (n.midipitch - n.str) in
+               let s = if n.midipitch < n.str then "(" ^ s ^ ")" else s in
                if !dx > 0 then "," ^ s else s
             in
             let elt = {

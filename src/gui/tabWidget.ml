@@ -19,7 +19,7 @@ type tw = {
 }
 
 let select_font c =
-   C.select_font_face c "monospace" C.FONT_SLANT_NORMAL C.FONT_WEIGHT_NORMAL;
+   C.select_font_face c "monospace" C.FONT_SLANT_NORMAL C.FONT_WEIGHT_BOLD;
    C.set_font_size c 14.0
 
 let xunit, yunit =
@@ -86,8 +86,8 @@ let rows tw =
             let s' = !s +: mwidth !i in
             let penalty s =
                let ssize = calc_space_size tw s in
-               Float.abs (1.0 -. ssize)
-               +. (if ssize < 0.5 then 10.0 else 0.0)
+               Float.abs (1.3 -. ssize)
+               +. (if ssize < 0.9 then 10.0 else 0.0)
             in
             if penalty s' > penalty !s then
                failwith "it's enough";
