@@ -1,4 +1,6 @@
 OCAMLPACKS[] +=
+   cairo
+   cairo.lablgtk2
    lablgtk2
    unix
 

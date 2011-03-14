@@ -6,10 +6,9 @@ open MidiFile
 open MidiNote
 open React
 open TabRender
-module C = GnoCanvas
+module C = Cairo
+module CG = Cairo_lablgtk
 module R = Gdk.Rectangle
-
-let font = Font.load "-*-lucidabright-medium-r-*-*-18-*-*-*-*-*-*-*"
 
 type tw = {
    file_s : file S.t;
@@ -19,12 +18,20 @@ type tw = {
    sw : GBin.scrolled_window;
 }
 
-let unitsize = 30.0
+let select_font c =
+   C.select_font_face c "monospace" C.FONT_SLANT_NORMAL C.FONT_WEIGHT_NORMAL;
+   C.set_font_size c 14.0
+
+let xunit, yunit =
+   let s = C.image_surface_create C.FORMAT_A1 ~width:1 ~height:1 in
+   let c = C.create s in
+   select_font c;
+   let ext = C.font_extents c in
+   ext.C.max_x_advance, ext.C.font_height
 
 let fl x = float_of_int x
 
-let cy y = truncate (y *. unitsize +. 0.5)
-let wy y = (fl y) /. unitsize
+let cy y = y *. yunit
 
 let track_height = 8.0
 
@@ -44,8 +51,12 @@ let update_mwidth tw =
    DynArray.clear tw.mwidth;
    F.measures f |> Vect.enum |> Enum.map (fun m ->
       let w =
+         let get_endpoint elt =
+            let len = (String.length elt.text |> fl, 0.) in
+            elt.x +: len
+         in
          render_measure f tw.tracks m
-         |> Enum.map (fun elt -> elt.x)
+         |> Enum.map get_endpoint
          |> Enum.fold tabx_max (0., 0.)
       in
       (* measure delimiting space *)
@@ -54,8 +65,7 @@ let update_mwidth tw =
    redraw tw
 
 let calc_space_size tw (w_chars, w_spaces) =
-   let charsize = unitsize in
-   let w = fl tw.tab#width /. charsize in
+   let w = fl tw.tab#width /. xunit in
    (w -. w_chars) /. w_spaces
 
 let rows tw =
@@ -92,16 +102,23 @@ let rows tw =
    )
 
 let expose tw r =
+   (* Setup *)
+   let c = CG.create tw.tab#bin_window in
+   select_font c;
+   let ext = C.font_extents c in
    let rh = row_height tw in
    let r1, r2 =
-      let row y = truncate (fl y /. unitsize /. rh) in
+      let row y = truncate (fl y /. yunit /. rh) in
       row (R.y r), row (R.y r + R.height r)
    in
-   let drawing = new GDraw.drawable tw.tab#bin_window in
+   let ms = F.measures (file tw) in
+
    (* Background *)
-   drawing#set_foreground (`RGB (0xffff, 0xffff, 0xd000));
-   drawing#rectangle ~filled:true ~x:(R.x r) ~y:(R.y r)
-                     ~width:(R.width r) ~height:(R.height r) ();
+   C.set_source_rgb c ~red:1.0 ~green:1.0 ~blue:0.9;
+   CG.rectangle c r;
+   C.fill c;
+
+   (* Measures *)
    Enum.combine (rows tw, (0 -- max_int))
    |> Enum.skip r1
    |> Enum.take (r2 - r1 + 1)
@@ -112,40 +129,36 @@ let expose tw r =
       in
       let ssize = calc_space_size tw rwidth in
       let rx = ref (0., 0.) in
-      let ms = F.measures (file tw) in
+      (*
       Printf.printf "ssize: %f\n%!" ssize;
-      let cx (c, s) = (c +. s *. ssize) *. unitsize +. 0.5 |> truncate in
-      let rect ?filled ~x ~y ~w ~h () =
-         drawing#rectangle ~x:(cx x)
-                           ~y:(cy y)
-                           ~width:(cx w)
-                           ~height:(cy h)
-                           ?filled ()
+      *)
+      let cx (c, s) = (c +. s *. ssize) *. xunit in
+      let rect ~x ~y ~w ~h =
+         C.rectangle c ~x:(cx x)
+                       ~y:(cy y)
+                       ~width:(cx w)
+                       ~height:(cy h)
       in
       Enum.iter (fun m ->
          let x = !rx and w = DynArray.get tw.mwidth m in
          rx := x +: w;
-         (*
-         drawing#set_foreground (`NAME "red");
-         rect ~filled:true ~x ~y ~w ~h:rh ();
-         *)
-         drawing#set_foreground `BLACK;
-         rect ~x ~y ~w ~h:rh ();
-         let asc = Font.ascent font |> wy
-         and desc = Font.descent font |> wy in
+         C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
+         rect ~x ~y ~w ~h:rh;
+         C.stroke c;
          render_measure (file tw) tw.tracks (Vect.get ms m)
          |> Enum.iter (fun elt ->
-            let h = asc +. desc in
+            let h = ext.C.font_height in
+            ignore h;
             let x = x +: (0., 1.) +: elt.x in
-            let y =
-               y +. rh -. fl elt.y -. 0.5 +. h /. 2. -. desc
-            in
-            drawing#set_foreground `BLACK;
-            drawing#string elt.text ~font:font ~x:(cx x) ~y:(cy y);
             (*
-            drawing#set_foreground (`NAME "red");
-            rect ~x ~y ~w ~h ()
+            Printf.printf "%s %f %f\n%!" elt.text (fst x) (snd x);
             *)
+            let y =
+               y +. rh -. fl elt.y -. 0.5
+            in
+            C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
+            C.move_to c ~x:(cx x) ~y:(cy y);
+            C.show_text c elt.text
          )
       ) e
    );
@@ -155,18 +168,12 @@ let expose tw r =
 let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
 
 let readjust_height tw =
-   tw.tab#set_height (calc_height tw *. unitsize |> truncate)
+   tw.tab#set_height (calc_height tw *. yunit |> truncate)
 
 let resize tw {Gtk.width = rw} =
    tw.tab#set_width rw;
    readjust_height tw;
    redraw tw
-   (*
-   let w = fl rw /. unitsize in
-   let h = calc_height tw in
-   tw.tab#set_width (truncate w);
-   tw.tab#set_height (truncate h)
-   *)
 
 let vscroll tw a =
    ()
