@@ -1,4 +1,5 @@
 open Batteries
+open React
 
 (** Abstract widget and window types *)
 type widget = GObj.widget
@@ -16,7 +17,7 @@ class pseudo_widget :
 
 val coerce : #pseudo_widget -> widget
 
-val attach_signal : 'a React.S.t -> #GObj.widget -> unit
+val attach_signal : 'a S.t -> #GObj.widget -> unit
 
 (** Create a GUI window, containing one widget.  When the window is closed it
     will automatically end the GUI loop. *)
@@ -80,7 +81,7 @@ val hbox :
 val button :
   ?callbacks:(GButton.button -> unit) list ->
   ?relief:Gtk.Tags.relief_style ->
-  string ->
+  string S.t ->
   widget
 
 (** Drawing area widget which can be used for custom widgets *)
@@ -114,7 +115,7 @@ val scrolled_window :
 val slider :
   ?callback:(float -> unit) ->
   ?move_callback:(float -> unit) ->
-  ?signal:float React.S.t ->
+  ?signal:float S.t ->
   ?init:float ->
   ?step_incr:float ->
   ?page_incr:float ->
@@ -140,7 +141,7 @@ class ['a] tnotebook :
     method current_tpage : 'a
     method get_tpage : int -> 'a
     method notebook : GPack.notebook
-    method tpage_signal : 'a option React.S.t
+    method tpage_signal : 'a option S.t
   end
 
 val tnotebook :
@@ -184,7 +185,7 @@ val menuitem :
 
 val dynmenuitem :
   ?g:GMenu.menu_item Global.t ->
-  (string * bool) React.S.t ->
+  (string * bool) S.t ->
   ?modi:Gdk.Tags.modifier list ->
   ?key:Gdk.keysym ->
   (unit -> unit) ->

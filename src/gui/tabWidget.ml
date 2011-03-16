@@ -19,7 +19,7 @@ type tw = {
 }
 
 let select_font c =
-   C.select_font_face c "monospace" C.FONT_SLANT_NORMAL C.FONT_WEIGHT_BOLD;
+   C.select_font_face c "monospace" C.FONT_SLANT_NORMAL C.FONT_WEIGHT_NORMAL;
    C.set_font_size c 14.0
 
 let xunit, yunit =

@@ -21,6 +21,8 @@ module F : sig
    val tracks : t -> track_id Enum.t
    val tracks_count : t -> int
    val track_index : (t * track_id) -> int
+   val track_name : (t * track_id) -> string
+   val set_track_name : string -> (t * track_id) -> t
    val add_track : t -> t
    val remove_track : track_id -> t -> t
    val channels : track_id -> t -> int Enum.t

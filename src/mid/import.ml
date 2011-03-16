@@ -105,6 +105,11 @@ let import_events ?(division = 240) ?(appl = true) events =
             ctrl c Ctrl.Program time v
       | `PitchWheel (c, v) ->
             ctrl c Ctrl.PitchWheel time v
+      | `TrackName s ->
+            file := F.set_track_name s (!file, F.track track !file)
+      | `EndOfTrack ->
+            (* TODO: off all unoffed notes *)
+            ()
       | `Tempo v ->
             let map = F.tempo_map !file |> CtrlMap.set time v in
             file := F.set_tempo_map map !file

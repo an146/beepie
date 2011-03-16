@@ -12,9 +12,18 @@ type measure = {
    notes : note list;
 }
 
+type tsettings = {
+   name : string;
+}
+
+let default_tsettings = {
+   name = "";
+}
+
 type file = {
    division : int;
    tracks : track_id Vect.t;
+   tsettings : (track_id, tsettings) PMap.t;
    channel_usage : (track_id * int) Vect.t;
    measures : measure Vect.t;
 
@@ -36,6 +45,7 @@ let create division =
    {
       division;
       tracks = Vect.empty;
+      tsettings = PMap.empty;
       channel_usage = Vect.make 16 (-1, 0);
       measures = Vect.empty;
 
@@ -52,6 +62,16 @@ let track i {tracks} = Vect.get tracks i
 let tracks {tracks} = Vect.enum tracks
 let tracks_count {tracks} = Vect.length tracks
 let track_index ({tracks}, tr) = (Vect.findi ((=) tr) tracks - 1)
+let track_name ({tsettings}, tr) = (PMap.find tr tsettings).name
+
+let set_track_name name (f, tr) =
+   let tsettings =
+      PMap.modify tr (fun s ->
+         (* name is the only field *)
+         {name}
+      ) f.tsettings
+   in
+   {f with tsettings}
 
 let owns {channel_usage} tr c =
    let (tr', n) = Vect.get channel_usage c in
@@ -64,7 +84,11 @@ let add_track =
    let id = ref 1000 in
    fun f ->
       let id = (incr id; !id) in
-      {f with tracks = Vect.append id f.tracks}
+      {
+         f with
+         tracks = Vect.append id f.tracks;
+         tsettings = PMap.add id default_tsettings f.tsettings;
+      }
 
 let remove_track tr f =
    assert (Enum.is_empty (channels tr f));

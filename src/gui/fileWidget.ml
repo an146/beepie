@@ -69,9 +69,10 @@ class file_widget initfile =
                      tracks_table#set_columns (j + 1);
                   tracks_table#attach ~left:j ~top:i ~expand w;
                in
-               let btn lbl clb = button ~relief:`NONE ~callbacks:[
+               let btn_s lbl_s clb = button ~relief:`NONE ~callbacks:[
                   button_callback (fun _ _ -> clb (); false)
-               ] lbl in
+               ] lbl_s in
+               let btn lbl = btn_s (S.const lbl) in
                let sep () = `fill, separator `VERTICAL in
 
                let track_s =
@@ -93,7 +94,7 @@ class file_widget initfile =
                   sep ();
                   `fill,   btn "S" (fun () -> ());
                   sep ();
-                  `expand, btn "Name" (fun () -> ());
+                  `expand, btn_s (S.map F.track_name track_s) (fun () -> ());
                   sep ();
                   `expand, btn "Instr" (fun () -> ());
                   sep ();

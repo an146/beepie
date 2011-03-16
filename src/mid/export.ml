@@ -16,14 +16,14 @@ type channel_ctx = {
 
 type event =
    (* order matters, the priority of events is determined by compare *)
-   | HeadTrackCmd of (int * MidiCmd.t)
+   | Meta of (int * int * MidiCmd.t)
    | Off of note
    | Ctrl of int * Ctrl.t * (int * int)
    | On of note
 
 let event_time e =
    match e with
-   | HeadTrackCmd (time, _) -> time
+   | Meta (time, _, _) -> time
    | Off n -> n.etime
    | Ctrl (_, _, (time, _)) -> time
    | On n -> n.stime
@@ -60,15 +60,15 @@ let export_events file =
       in
       List.enum ctrls // (fun (i, _) -> owned i) /@ e_ctrl
    and e_tempo =
-      let cmd (t, v) = HeadTrackCmd (t, tempo v) in
+      let cmd (t, v) = Meta (t, -1, tempo v) in
       F.tempo_map file |> CtrlMap.enum |> Enum.map cmd
    and e_timesig =
-      let cmd (t, v) = HeadTrackCmd (t, `TimeSig v) in
+      let cmd (t, v) = Meta (t, -1, `TimeSig v) in
       F.timesig_map file |> CtrlMap.enum |> Enum.map cmd
    in
    let event_track = function
-      | HeadTrackCmd (time, _) ->
-            -1
+      | Meta (_, track, _) ->
+            track
       | Off {channel = c}
       | Ctrl (c, _, _)
       | On {channel = c} ->
@@ -133,8 +133,8 @@ let export_events file =
                List.append (List.of_enum ctrl_cmds) [oncmd]
             else
                [oncmd]
-      | Some (HeadTrackCmd (time, cmd)) ->
-            [time, -1, cmd]
+      | Some (Meta cmd) ->
+            [cmd]
    in
    Enum.from get_events |> Enum.map List.enum |> Enum.flatten
 

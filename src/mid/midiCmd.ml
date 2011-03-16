@@ -72,6 +72,8 @@ let read ?running_status input =
       let databytes = data |> String.to_list |> List.map int_of_char in
       running_status := -1;
       match mtype, databytes with
+      | 0x03, _ -> `TrackName data
+      | 0x2F, _ -> `EndOfTrack
       | 0x51, _ -> tempo (decode_be_int databytes 3)
       | 0x58, b1 :: b2 :: _ :: _ :: [] -> `TimeSig (TimeSig.make b1 b2)
       | t, _ -> `UnsupportedMeta (t, data)
@@ -106,6 +108,10 @@ let write_meta ~running_status out cmd =
    in
    running_status := -1;
    match cmd with
+   | `TrackName s ->
+         write_meta_s 0x03 s
+   | `EndOfTrack ->
+         write_meta_s 0x2F ""
    | `Tempo t ->
          write_meta_l 0x51 (encode_be_int t 3)
    | `TimeSig ts ->

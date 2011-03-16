@@ -128,8 +128,10 @@ let box f contents =
 let vbox = box GPack.vbox
 let hbox = box GPack.hbox
 
-let button ?callbacks ?relief label =
+let button ?callbacks ?relief label_s =
+  let label = S.value label_s in
   let btn = GButton.button ?relief ~label () in
+  attach_signal (S.trace btn#set_label label_s) btn;
   connect_callbacks ?callbacks btn;
   btn#coerce
 
