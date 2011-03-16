@@ -1,4 +1,5 @@
 open Batteries
+open GToolbox
 open GtkBase
 open GtkSugar
 open MidiFile
@@ -94,7 +95,12 @@ class file_widget initfile =
                   sep ();
                   `fill,   btn "S" (fun () -> ());
                   sep ();
-                  `expand, btn_s (S.map F.track_name track_s) (fun () -> ());
+                  `expand, btn_s (S.map F.track_name track_s) (fun () ->
+                     Option.may (fun name ->
+                        let f = F.set_track_name name (S.value track_s) in
+                        self#commit "Set Track Name" f
+                     ) (input_string ~title:"Set track name" "Enter track name:")
+                  );
                   sep ();
                   `expand, btn "Instr" (fun () -> ());
                   sep ();
