@@ -6,6 +6,7 @@ open MidiFile
 open MidiNote
 open React
 open TabRender
+open TabWidgetStyle
 module C = Cairo
 module CG = Cairo_lablgtk
 module R = Gdk.Rectangle
@@ -18,30 +19,19 @@ type tw = {
    sw : GBin.scrolled_window;
 }
 
-let select_font c =
-   C.select_font_face c "monospace" C.FONT_SLANT_NORMAL C.FONT_WEIGHT_NORMAL;
-   C.set_font_size c 14.0
-
 let xunit, yunit =
    let s = C.image_surface_create C.FORMAT_A1 ~width:1 ~height:1 in
    let c = C.create s in
-   select_font c;
+   select_font c Style.font;
    let ext = C.font_extents c in
    ext.C.max_x_advance, ext.C.font_height
 
 let fl x = float_of_int x
 
-(* X axis constants *)
-let npadding = 0.2
-let left_margin, right_margin = 1., 1.
-
-(* Y axis constants *)
-let track_height = 8.0
-let row_height tw = track_height *. (List.length tw.tracks |> fl)
-let top_margin, bottom_margin = 1., 1.
+let row_height tw = Style.track_height *. (List.length tw.tracks |> fl)
 
 let ch y = y *. yunit
-let cy y = top_margin *. yunit +. (ch y)
+let cy y = Style.top_margin *. yunit +. (ch y)
 
 let strings = [40; 45; 50; 55; 59; 64]
 
@@ -71,7 +61,8 @@ let update_mwidth tw =
    redraw tw
 
 let calc_space_size tw (w_chars, w_spaces) =
-   let w = (fl tw.tab#width) /. xunit -. left_margin -. right_margin in
+   let w = (fl tw.tab#width) /. xunit in
+   let w = w -. Style.left_margin -. Style.right_margin in
    (w -. w_chars) /. w_spaces
 
 let rows tw =
@@ -108,25 +99,27 @@ let rows tw =
    )
 
 let render_row tw c (e, i) =
-   let y = fl i *. (row_height tw) in
    let h = row_height tw in
+   let y = fl i *. h in
    let w =
       Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
    in
    let ssize = calc_space_size tw w in
    let rx = ref (0., 0.) in
    let cw (c, s) = (c +. s *. ssize) *. xunit in
-   let cx (c, s) = left_margin *. xunit +. cw (c, s) in
-   let rect ~x ~y ~w ~h =
-      C.rectangle c ~x:(cx x) ~y:(cy y) ~width:(cw w) ~height:(ch h)
-   in
+   let cx (c, s) = Style.left_margin *. xunit +. cw (c, s) in
    let render_measure m =
       let ms = F.measures (file tw) in
       let x = !rx and w = DynArray.get tw.mwidth m in
       rx := x +: w;
+      (*
+      let rect ~x ~y ~w ~h =
+         C.rectangle c ~x:(cx x) ~y:(cy y) ~width:(cw w) ~height:(ch h)
+      in
       C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
       rect ~x ~y ~w ~h;
       C.stroke c;
+      *)
       render_measure (file tw) tw.tracks (Vect.get ms m)
       |> Enum.iter (fun elt ->
          let x = x +: (0., 1.) +: elt.x in
@@ -140,7 +133,7 @@ let render_row tw c (e, i) =
 
 let expose tw r =
    let c = CG.create tw.tab#bin_window in
-   select_font c;
+   select_font c Style.font;
    let _ = (* Fill background *)
       C.set_source_rgb c ~red:1.0 ~green:1.0 ~blue:0.9;
       CG.rectangle c r;
@@ -148,7 +141,7 @@ let expose tw r =
    in
    let r1, r2 =
       let row y =
-         let y = fl y /. yunit -. top_margin in
+         let y = fl y /. yunit -. Style.top_margin in
          y /. (row_height tw) |> truncate
       in
       row (R.y r), row (R.y r + R.height r)
@@ -164,7 +157,8 @@ let expose tw r =
 let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
 
 let readjust_height tw =
-   cy (calc_height tw +. bottom_margin) |> truncate |> tw.tab#set_height
+   let h = Style.top_margin +. calc_height tw +. Style.bottom_margin in
+   ch h |> truncate |> tw.tab#set_height
 
 let resize tw {Gtk.width = rw} =
    tw.tab#set_width rw;
