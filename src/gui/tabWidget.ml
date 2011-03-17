@@ -31,13 +31,17 @@ let xunit, yunit =
 
 let fl x = float_of_int x
 
-let cy y = y *. yunit
-
-let track_height = 8.0
-
-let row_height tw = track_height *. (List.length tw.tracks |> fl)
-
+(* X axis constants *)
 let npadding = 0.2
+let left_margin, right_margin = 1., 1.
+
+(* Y axis constants *)
+let track_height = 8.0
+let row_height tw = track_height *. (List.length tw.tracks |> fl)
+let top_margin, bottom_margin = 1., 1.
+
+let ch y = y *. yunit
+let cy y = top_margin *. yunit +. (ch y)
 
 let strings = [40; 45; 50; 55; 59; 64]
 
@@ -59,13 +63,15 @@ let update_mwidth tw =
          |> Enum.map get_endpoint
          |> Enum.fold tabx_max (0., 0.)
       in
+      (* empty measure contains 1 empty row *)
+      let w = if w > (0., 0.) then w else w +: (1., 0.) in
       (* measure delimiting space *)
       w +: (0., 2.)
    ) |> Enum.iter (DynArray.add tw.mwidth);
    redraw tw
 
 let calc_space_size tw (w_chars, w_spaces) =
-   let w = fl tw.tab#width /. xunit in
+   let w = (fl tw.tab#width) /. xunit -. left_margin -. right_margin in
    (w -. w_chars) /. w_spaces
 
 let rows tw =
@@ -108,7 +114,7 @@ let expose tw r =
    let ext = C.font_extents c in
    let rh = row_height tw in
    let r1, r2 =
-      let row y = truncate (fl y /. yunit /. rh) in
+      let row y = truncate ((fl y /. yunit -. top_margin) /. rh) in
       row (R.y r), row (R.y r + R.height r)
    in
    let ms = F.measures (file tw) in
@@ -132,12 +138,13 @@ let expose tw r =
       (*
       Printf.printf "ssize: %f\n%!" ssize;
       *)
-      let cx (c, s) = (c +. s *. ssize) *. xunit in
+      let cw (c, s) = (c +. s *. ssize) *. xunit in
+      let cx (c, s) = left_margin *. xunit +. cw (c, s) in
       let rect ~x ~y ~w ~h =
          C.rectangle c ~x:(cx x)
                        ~y:(cy y)
-                       ~width:(cx w)
-                       ~height:(cy h)
+                       ~width:(cw w)
+                       ~height:(ch h)
       in
       Enum.iter (fun m ->
          let x = !rx and w = DynArray.get tw.mwidth m in
@@ -168,7 +175,7 @@ let expose tw r =
 let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
 
 let readjust_height tw =
-   tw.tab#set_height (calc_height tw *. yunit |> truncate)
+   cy (calc_height tw +. bottom_margin) |> truncate |> tw.tab#set_height
 
 let resize tw {Gtk.width = rw} =
    tw.tab#set_width rw;
