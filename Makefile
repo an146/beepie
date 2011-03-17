@@ -1,8 +1,8 @@
 all:
-	omake
+	./run-omake.sh
 
 test:
-	omake test
+	./run-omake.sh test
 
 clean:
 	omake clean
