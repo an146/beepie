@@ -107,69 +107,58 @@ let rows tw =
          Queue.enum q
    )
 
+let render_row tw c (e, i) =
+   let y = fl i *. (row_height tw) in
+   let h = row_height tw in
+   let w =
+      Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
+   in
+   let ssize = calc_space_size tw w in
+   let rx = ref (0., 0.) in
+   let cw (c, s) = (c +. s *. ssize) *. xunit in
+   let cx (c, s) = left_margin *. xunit +. cw (c, s) in
+   let rect ~x ~y ~w ~h =
+      C.rectangle c ~x:(cx x) ~y:(cy y) ~width:(cw w) ~height:(ch h)
+   in
+   let render_measure m =
+      let ms = F.measures (file tw) in
+      let x = !rx and w = DynArray.get tw.mwidth m in
+      rx := x +: w;
+      C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
+      rect ~x ~y ~w ~h;
+      C.stroke c;
+      render_measure (file tw) tw.tracks (Vect.get ms m)
+      |> Enum.iter (fun elt ->
+         let x = x +: (0., 1.) +: elt.x in
+         let y = y +. h -. fl elt.y -. 0.5 in
+         C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
+         C.move_to c ~x:(cx x) ~y:(cy y);
+         C.show_text c elt.text
+      )
+   in
+   Enum.iter render_measure e
+
 let expose tw r =
-   (* Setup *)
    let c = CG.create tw.tab#bin_window in
    select_font c;
-   let ext = C.font_extents c in
-   let rh = row_height tw in
+   let _ = (* Fill background *)
+      C.set_source_rgb c ~red:1.0 ~green:1.0 ~blue:0.9;
+      CG.rectangle c r;
+      C.fill c;
+   in
    let r1, r2 =
-      let row y = truncate ((fl y /. yunit -. top_margin) /. rh) in
+      let row y =
+         let y = fl y /. yunit -. top_margin in
+         y /. (row_height tw) |> truncate
+      in
       row (R.y r), row (R.y r + R.height r)
    in
-   let ms = F.measures (file tw) in
-
-   (* Background *)
-   C.set_source_rgb c ~red:1.0 ~green:1.0 ~blue:0.9;
-   CG.rectangle c r;
-   C.fill c;
-
-   (* Measures *)
-   Enum.combine (rows tw, (0 -- max_int))
-   |> Enum.skip r1
-   |> Enum.take (r2 - r1 + 1)
-   |> Enum.iter (fun (e, i) ->
-      let y = fl i *. rh in
-      let rwidth =
-         Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
-      in
-      let ssize = calc_space_size tw rwidth in
-      let rx = ref (0., 0.) in
-      (*
-      Printf.printf "ssize: %f\n%!" ssize;
-      *)
-      let cw (c, s) = (c +. s *. ssize) *. xunit in
-      let cx (c, s) = left_margin *. xunit +. cw (c, s) in
-      let rect ~x ~y ~w ~h =
-         C.rectangle c ~x:(cx x)
-                       ~y:(cy y)
-                       ~width:(cw w)
-                       ~height:(ch h)
-      in
-      Enum.iter (fun m ->
-         let x = !rx and w = DynArray.get tw.mwidth m in
-         rx := x +: w;
-         C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
-         rect ~x ~y ~w ~h:rh;
-         C.stroke c;
-         render_measure (file tw) tw.tracks (Vect.get ms m)
-         |> Enum.iter (fun elt ->
-            let h = ext.C.font_height in
-            ignore h;
-            let x = x +: (0., 1.) +: elt.x in
-            (*
-            Printf.printf "%s %f %f\n%!" elt.text (fst x) (snd x);
-            *)
-            let y =
-               y +. rh -. fl elt.y -. 0.5
-            in
-            C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
-            C.move_to c ~x:(cx x) ~y:(cy y);
-            C.show_text c elt.text
-         )
-      ) e
-   );
-   (*Printf.printf "e: %i %i\n%!" (R.y r) (R.width r);*)
+   let _ =
+      Enum.combine (rows tw, (0 -- max_int))
+      |> Enum.skip r1
+      |> Enum.take (r2 - r1 + 1)
+      |> Enum.iter (render_row tw c)
+   in
    false
 
 let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
