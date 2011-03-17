@@ -111,7 +111,7 @@ let create_main_window () =
       in
       S.l2 fn Player.file_signal wfile_s
    in
-   window ~g:g_window ~callbacks:[Player.stop] ~accel ~title:"GtkSugar Test" (
+   window ~g:g_window ~callbacks:[Player.stop] ~accel ~title:"beepie" (
       vbox [
          `fill, menubar ~accel [
             menu "File" [
