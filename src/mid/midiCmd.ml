@@ -73,6 +73,7 @@ let read ?running_status input =
       running_status := -1;
       match mtype, databytes with
       | 0x03, _ -> `TrackName data
+      | 0x04, _ -> `InstrName data
       | 0x2F, _ -> `EndOfTrack
       | 0x51, _ -> tempo (decode_be_int databytes 3)
       | 0x58, b1 :: b2 :: _ :: _ :: [] -> `TimeSig (TimeSig.make b1 b2)
@@ -109,6 +110,8 @@ let write_meta ~running_status out cmd =
    running_status := -1;
    match cmd with
    | `TrackName s ->
+         write_meta_s 0x03 s
+   | `InstrName s ->
          write_meta_s 0x03 s
    | `EndOfTrack ->
          write_meta_s 0x2F ""

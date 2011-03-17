@@ -9,6 +9,7 @@ type voice_t = [
 ] and meta_t = [
    | `EndOfTrack
    | `TrackName of string
+   | `InstrName of string
    | `Tempo of int
    | `TimeSig of TimeSig.t
    | `UnsupportedMeta of int * string
