@@ -19,17 +19,19 @@ type tw = {
    sw : GBin.scrolled_window;
 }
 
-let xunit, yunit =
+let xunit, yunit, ascent, descent =
    let s = C.image_surface_create C.FORMAT_A1 ~width:1 ~height:1 in
    let c = C.create s in
    select_font c Style.font;
    let ext = C.font_extents c in
-   ext.C.max_x_advance, ext.C.font_height
+   ext.C.max_x_advance, ext.C.font_height, ext.C.ascent, ext.C.descent
 
 let fl x = float_of_int x
 
 let row_height tw = Style.track_height *. (List.length tw.tracks |> fl)
 
+let cw ssize (c, s) = (c +. s *. ssize) *. xunit
+let cx ssize (c, s) = Style.left_margin *. xunit +. cw ssize (c, s)
 let ch y = y *. yunit
 let cy y = Style.top_margin *. yunit +. (ch y)
 
@@ -105,37 +107,65 @@ let render_row tw c (e, i) =
       Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
    in
    let ssize = calc_space_size tw w in
-   let rx = ref (0., 0.) in
-   let cw (c, s) = (c +. s *. ssize) *. xunit in
-   let cx (c, s) = Style.left_margin *. xunit +. cw (c, s) in
-   let render_measure m =
-      let ms = F.measures (file tw) in
-      let x = !rx and w = DynArray.get tw.mwidth m in
-      rx := x +: w;
-      (*
-      let rect ~x ~y ~w ~h =
-         C.rectangle c ~x:(cx x) ~y:(cy y) ~width:(cw w) ~height:(ch h)
-      in
-      C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
-      rect ~x ~y ~w ~h;
-      C.stroke c;
-      *)
-      render_measure (file tw) tw.tracks (Vect.get ms m)
-      |> Enum.iter (fun elt ->
-         let x = x +: (0., 1.) +: elt.x in
-         let y = y +. h -. fl elt.y -. 0.5 in
-         C.set_source_rgb c ~red:0.0 ~green:0.0 ~blue:0.0;
-         C.move_to c ~x:(cx x) ~y:(cy y);
-         C.show_text c elt.text
-      )
+   let cx = cx ssize and cw = cw ssize in
+   let move_to x y = C.move_to c ~x:(cx x) ~y:(cy y) in
+   let line_to x y = C.line_to c ~x:(cx x) ~y:(cy y) in
+   let rect ~x ~y ~w ~h =
+      C.rectangle c ~x:(cx x) ~y:(cy y) ~width:(cw w) ~height:(ch h)
    in
-   Enum.iter render_measure e
+   let _ = rect in
+   let _ = (* strings *)
+      set_source_color c Style.string_color;
+      for i = 0 to List.length strings - 1 do
+         let y = y +. h -. 0.5 -. fl i in
+         move_to (0., 0.) y;
+         line_to w y;
+         C.stroke c
+      done
+   in
+   let measurebar x =
+      set_source_color c Style.measurebar_color;
+      move_to x (y +. h -. 0.5);
+      line_to x (y +. h -. 0.5 -. fl (List.length strings - 1));
+      C.stroke c
+   in
+   let render_measure x m =
+      measurebar x;
+      let _ = (* measure number *)
+         select_font c Style.measure_font;
+         set_source_color c Style.measure_color;
+         C.move_to c ~x:(cx (x +: Style.measure_x)) ~y:(cy (y +. Style.measure_y));
+         C.show_text c (string_of_int (m + 1));
+      and _ = (* notes *)
+         select_font c Style.font;
+         Vect.get (F.measures (file tw)) m
+         |> render_measure (file tw) tw.tracks
+         |> Enum.iter (fun elt ->
+            let x = x +: (0., 1.) +: elt.x in
+            let y = y +. h -. fl elt.y -. descent /. yunit in
+            set_source_color c Style.background;
+            rect ~x ~y ~w:(String.length elt.text |> fl, 0.) ~h:(~-. 1.0);
+            C.fill c;
+            set_source_color c Style.foreground;
+            C.move_to c ~x:(cx x) ~y:(cy y);
+            C.show_text c elt.text
+         )
+         (*
+      and _ = (* measure bounding box *)
+         set_source_color c Style.foreground;
+         rect ~x ~y ~w ~h;
+         C.stroke c;
+         *)
+      in
+      x +: DynArray.get tw.mwidth m;
+   in
+   Enum.fold render_measure (0., 0.) e
+   |> measurebar
 
 let expose tw r =
    let c = CG.create tw.tab#bin_window in
-   select_font c Style.font;
    let _ = (* Fill background *)
-      C.set_source_rgb c ~red:1.0 ~green:1.0 ~blue:0.9;
+      set_source_color c Style.background;
       CG.rectangle c r;
       C.fill c;
    in
