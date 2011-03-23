@@ -28,6 +28,8 @@ module F : sig
 
    val track_name : t -> track_id -> string
    val set_track_name : string -> t -> track_id -> t
+   val track_strings : t -> track_id -> int list
+   val set_track_strings : int list -> t -> track_id -> t
 
    val measures : t -> measure Vect.t
    val add_note : track_id -> note -> t -> t

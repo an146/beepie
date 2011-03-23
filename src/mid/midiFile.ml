@@ -14,10 +14,12 @@ type measure = {
 
 type tsettings = {
    name : string;
+   strings : int list;
 }
 
 let default_tsettings = {
    name = "";
+   strings = [40; 45; 50; 55; 59; 64];
 }
 
 type file = {
@@ -63,16 +65,15 @@ let tracks {tracks} = Vect.enum tracks
 let tracks_count {tracks} = Vect.length tracks
 let track_index {tracks} tr = (Vect.findi ((=) tr) tracks - 1)
 
-let track_name {tsettings} tr = (PMap.find tr tsettings).name
-
-let set_track_name name f tr =
-   let tsettings =
-      PMap.modify tr (fun s ->
-         (* name is the only field *)
-         {name}
-      ) f.tsettings
-   in
+let tsettings {tsettings} tr = PMap.find tr tsettings
+let modify_tsettings fn f tr =
+   let tsettings = PMap.modify tr fn f.tsettings in
    {f with tsettings}
+
+let track_name f tr = (tsettings f tr).name
+let set_track_name name = modify_tsettings (fun s -> {s with name})
+let track_strings f tr = (tsettings f tr).strings
+let set_track_strings strings = modify_tsettings (fun s -> {s with strings})
 
 let owns {channel_usage} tr c =
    let (tr', n) = Vect.get channel_usage c in
