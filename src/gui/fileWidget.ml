@@ -71,7 +71,7 @@ let set_tracks_count fw n =
          sep ();
          `expand, btn_s (S.map (uncurry F.track_name) track_s) (fun () ->
             Option.may (fun name ->
-               let f = (uncurry (F.set_track_name name)) (S.value track_s) in
+               let f = track_s |> S.value |> uncurry (F.set_track_name name) in
                commit fw "Set Track Name" f
             ) (input_string ~title:"Set track name" "Enter track name:")
          );
