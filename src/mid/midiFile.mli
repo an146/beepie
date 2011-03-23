@@ -20,13 +20,14 @@ module F : sig
    val track : int -> t -> track_id
    val tracks : t -> track_id Enum.t
    val tracks_count : t -> int
-   val track_index : (t * track_id) -> int
-   val track_name : (t * track_id) -> string
-   val set_track_name : string -> (t * track_id) -> t
+   val track_index : t -> track_id -> int
    val add_track : t -> t
    val remove_track : track_id -> t -> t
    val channels : track_id -> t -> int Enum.t
    val channel_owner : int -> t -> track_id option
+
+   val track_name : t -> track_id -> string
+   val set_track_name : string -> t -> track_id -> t
 
    val measures : t -> measure Vect.t
    val add_note : track_id -> note -> t -> t

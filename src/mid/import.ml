@@ -106,7 +106,7 @@ let import_events ?(division = 240) ?(appl = true) events =
       | `PitchWheel (c, v) ->
             ctrl c Ctrl.PitchWheel time v
       | `TrackName s ->
-            file := F.set_track_name s (!file, F.track track !file)
+            file := F.set_track_name s !file (F.track track !file)
       | `InstrName _ ->
             () (* it's useless *)
       | `EndOfTrack ->

@@ -35,7 +35,7 @@ let export_events file =
          Ctrl.all_supported |> List.enum |> Enum.map entry |> PMap.of_enum
       in
       let ctx tr = {
-         track = F.track_index (file, tr);
+         track = F.track_index file tr;
          ons = 0;
          ctrls_current;
          ctrls_cached = PMap.empty

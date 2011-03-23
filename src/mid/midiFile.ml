@@ -61,10 +61,11 @@ let measures {measures} = measures
 let track i {tracks} = Vect.get tracks i
 let tracks {tracks} = Vect.enum tracks
 let tracks_count {tracks} = Vect.length tracks
-let track_index ({tracks}, tr) = (Vect.findi ((=) tr) tracks - 1)
-let track_name ({tsettings}, tr) = (PMap.find tr tsettings).name
+let track_index {tracks} tr = (Vect.findi ((=) tr) tracks - 1)
 
-let set_track_name name (f, tr) =
+let track_name {tsettings} tr = (PMap.find tr tsettings).name
+
+let set_track_name name f tr =
    let tsettings =
       PMap.modify tr (fun s ->
          (* name is the only field *)
