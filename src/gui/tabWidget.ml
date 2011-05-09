@@ -20,10 +20,7 @@ type tw = {
 }
 
 let xunit, yunit, ascent, descent =
-   let s = C.image_surface_create C.FORMAT_A1 ~width:1 ~height:1 in
-   let c = C.create s in
-   select_font c Style.font;
-   let ext = C.font_extents c in
+   let ext = get_font_extents Style.font in
    ext.C.max_x_advance, ext.C.font_height, ext.C.ascent, ext.C.descent
 
 let fl x = float_of_int x
