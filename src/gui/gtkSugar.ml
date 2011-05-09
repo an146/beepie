@@ -42,8 +42,8 @@ let attach_signal v (w : #GObj.widget) =
   w#misc#connect#destroy ~callback:(fun () -> ignore v) |> ignore
 
 (** The base Gtk+ window *)
-let window ?g ?accel ?callbacks ~title entry =
-  let w = GWindow.window ~title () in
+let window ?g ?accel ?callbacks ?wm_name ?wm_class ~title entry =
+  let w = GWindow.window ~title ?wm_name ?wm_class () in
   ignore (w#connect#destroy GMain.quit);
   setg g w;
   Option.may (List.iter (fun f -> ignore (w#connect#destroy f))) callbacks;

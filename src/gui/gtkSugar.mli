@@ -24,7 +24,10 @@ val attach_signal : 'a S.t -> #GObj.widget -> unit
 val window :
   ?g: window Global.t ->
   ?accel:Gtk.accel_group ->
-  ?callbacks:(unit -> unit) list -> title:string -> widget -> window
+  ?callbacks:(unit -> unit) list ->
+  ?wm_name: string ->
+  ?wm_class: string ->
+  title:string -> widget -> window
 
 (** Show a window *)
 val show : window -> unit

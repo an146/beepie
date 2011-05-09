@@ -111,7 +111,14 @@ let create_main_window () =
       in
       S.l2 fn Player.file_signal wfile_s
    in
-   window ~g:g_window ~callbacks:[Player.stop] ~accel ~title:"beepie" (
+   window
+      ~g:g_window
+      ~callbacks:[Player.stop]
+      ~accel
+      ~title:"beepie"
+      ~wm_name:"beepie"
+      ~wm_class:"beepie"
+   (
       vbox [
          `fill, menubar ~accel [
             menu "File" [
