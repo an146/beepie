@@ -2,22 +2,15 @@ open Batteries
 open MidiFile
 open MidiNote
 open MiscUtils
+open TabX.Infix
 
 type elt_value = [
    | `Nothing
    | `Note of note
 ]
 
-type tabx = float * float (* chars * spaces *)
-
-let tabx_op op (a_c, a_s) (b_c, b_s) =
-   (op a_c b_c, op a_s b_s)
-
-let (+:) a b = tabx_op (+.) a b
-let tabx_max a b = tabx_op max a b
-
 type elt = {
-   x : tabx;
+   x : TabX.t;
    y : int;
    track : track_id;
    text : string;
@@ -34,7 +27,7 @@ let render_measure f tracks m =
       |> Enum.group (fun n -> n.stime)
    in
    let column = Hashtbl.create 20 in
-   let x = ref (0., 0.) in
+   let x = ref TabX.zero in
    let stridx = Hashtbl.create 16 in
    List.iteri (fun i s -> Hashtbl.add stridx s i) strings;
    Enum.map (fun notes ->
@@ -48,7 +41,7 @@ let render_measure f tracks m =
          Queue.push n q
       ) notes;
       let x0 = !x in
-      x := !x +: (0., 1.);
+      x := !x +: TabX.space;
       Hashtbl.enum column |> Enum.map (fun ((tr, str), q) ->
          let dx = ref 0 in
          let note_elt n =
@@ -58,14 +51,14 @@ let render_measure f tracks m =
                if !dx > 0 then "," ^ s else s
             in
             let elt = {
-               x = x0 +: (float !dx, 0.);
+               x = x0 +: (TabX.charsi !dx);
                y = Hashtbl.find stridx n.str;
                track = tr;
                text = txt;
                value = `Nothing;
             } in
             dx := !dx + String.length txt;
-            x := tabx_max !x (x0 +: (float !dx, 0.));
+            x := TabX.charsi !dx +: x0 |> TabX.max !x;
             elt
          in
          Queue.enum q /@ note_elt

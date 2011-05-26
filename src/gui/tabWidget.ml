@@ -7,6 +7,7 @@ open MidiNote
 open React
 open TabLayout
 open TabWidgetStyle
+open TabX.Infix
 module C = Cairo
 module CG = Cairo_lablgtk
 module R = Gdk.Rectangle
@@ -14,7 +15,7 @@ module R = Gdk.Rectangle
 type tw = {
    file_s : file S.t;
    mutable tracks : track_id list;
-   mwidth : tabx DynArray.t;
+   mwidth : TabX.t DynArray.t;
    tab : GPack.layout;
    sw : GBin.scrolled_window;
 }
@@ -27,8 +28,8 @@ let fl x = float_of_int x
 
 let row_height tw = Style.track_height *. (List.length tw.tracks |> fl)
 
-let cw ssize (c, s) = (c +. s *. ssize) *. xunit
-let cx ssize (c, s) = Style.left_margin *. xunit +. cw ssize (c, s)
+let cw ssize tx = TabX.size tx ssize *. xunit
+let cx ssize tx = Style.left_margin *. xunit +. cw ssize tx
 let ch y = y *. yunit
 let cy y = Style.top_margin *. yunit +. (ch y)
 
@@ -45,24 +46,24 @@ let update_mwidth tw =
    F.measures f |> Vect.enum |> Enum.map (fun m ->
       let w =
          let get_endpoint elt =
-            let len = (String.length elt.text |> fl, 0.) in
+            let len = TabX.text elt.text in
             elt.x +: len
          in
          render_measure f tw.tracks m
          |> Enum.map get_endpoint
-         |> Enum.fold tabx_max (0., 0.)
+         |> Enum.fold TabX.max TabX.zero
       in
-      (* empty measure contains 1 empty row *)
-      let w = if w > (0., 0.) then w else w +: (1., 0.) in
+      (* empty measure contains 1 empty column *)
+      let w = if w > TabX.zero then w else w +: TabX.char in
       (* measure delimiting space *)
-      w +: (0., 2.)
+      w +: TabX.spacesi 2
    ) |> Enum.iter (DynArray.add tw.mwidth);
    redraw tw
 
-let calc_space_size tw (w_chars, w_spaces) =
-   let w = (fl tw.tab#width) /. xunit in
-   let w = w -. Style.left_margin -. Style.right_margin in
-   (w -. w_chars) /. w_spaces
+let space_size tw w =
+   let cw = (fl tw.tab#width) /. xunit in
+   let cw = cw -. Style.left_margin -. Style.right_margin in
+   TabX.space_size w cw
 
 let rows tw =
    if DynArray.empty tw.mwidth then
@@ -81,7 +82,7 @@ let rows tw =
          while true do
             let s' = !s +: mwidth !i in
             let penalty s =
-               let ssize = calc_space_size tw s in
+               let ssize = space_size tw s in
                Float.abs (1.3 -. ssize)
                +. (if ssize < 0.9 then 10.0 else 0.0)
             in
@@ -103,7 +104,7 @@ let render_row tw c (e, i) =
    let w =
       Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
    in
-   let ssize = calc_space_size tw w in
+   let ssize = space_size tw w in
    let cx = cx ssize and cw = cw ssize in
    let move_to x y = C.move_to c ~x:(cx x) ~y:(cy y) in
    let line_to x y = C.line_to c ~x:(cx x) ~y:(cy y) in
@@ -115,7 +116,7 @@ let render_row tw c (e, i) =
       set_source_color c Style.string_color;
       for i = 0 to List.length strings - 1 do
          let y = y +. h -. 0.5 -. fl i in
-         move_to (0., 0.) y;
+         move_to TabX.zero y;
          line_to w y;
          C.stroke c
       done
@@ -138,10 +139,10 @@ let render_row tw c (e, i) =
          Vect.get (F.measures (file tw)) m
          |> render_measure (file tw) tw.tracks
          |> Enum.iter (fun elt ->
-            let x = x +: (0., 1.) +: elt.x in
+            let x = x +: TabX.space +: elt.x in
             let y = y +. h -. fl elt.y -. descent /. yunit in
             set_source_color c Style.background;
-            rect ~x ~y ~w:(String.length elt.text |> fl, 0.) ~h:(~-. 1.0);
+            rect ~x ~y ~w:(TabX.text elt.text) ~h:(~-. 1.0);
             C.fill c;
             set_source_color c Style.foreground;
             C.move_to c ~x:(cx x) ~y:(cy y);
@@ -156,7 +157,7 @@ let render_row tw c (e, i) =
       in
       x +: DynArray.get tw.mwidth m;
    in
-   Enum.fold render_measure (0., 0.) e
+   Enum.fold render_measure TabX.zero e
    |> measurebar
 
 let expose tw r =

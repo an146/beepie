@@ -13,7 +13,7 @@ module Style = struct
    (* Measure numbers *)
    let measure_font = ("monospace", FONT_SLANT_NORMAL, FONT_WEIGHT_NORMAL, 12.)
    let measure_color = "#f00000"
-   let measure_x = (0.5, 0.) and measure_y = 2.5
+   let measure_x = TabX.chars 0.5 and measure_y = 2.5
 
    let foreground = "black"
    let background = "#ffffee"

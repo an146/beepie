@@ -1,6 +1,7 @@
 FILES[] =
    applicature
    tabLayout
+   tabX
 
 OCAMLINCLUDES += ../util ../mid
 OCAML_LIBS += ../util/libutil ../mid/libmid

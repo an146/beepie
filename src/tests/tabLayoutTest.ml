@@ -15,8 +15,7 @@ let test () =
    let m = Vect.get (F.measures f) 0 in
    let render = render_measure f [t] m in
    let elt = render |> Enum.skip 1 |> Enum.get |> Option.get in
-   assert_equal ~msg:"x_chars" ~printer:string_of_float 2. (fst elt.x);
-   assert_equal ~msg:"x_spaces" ~printer:string_of_float 1. (snd elt.x)
+   assert_equal ~printer:TabX.printer (TabX.make 2. 1.) elt.x
 
 let tests =
    "tabRender" >::: [
