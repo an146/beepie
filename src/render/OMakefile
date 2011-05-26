@@ -1,6 +1,6 @@
 FILES[] =
    applicature
-   tabLayout
+   tabRender
    tabX
 
 OCAMLINCLUDES += ../util ../mid

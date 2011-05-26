@@ -5,7 +5,7 @@ open GtkSugar
 open MidiFile
 open MidiNote
 open React
-open TabLayout
+open TabRender
 open TabWidgetStyle
 open TabX.Infix
 module C = Cairo

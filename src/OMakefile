@@ -17,4 +17,4 @@ OCAML_LINK_FLAGS += -thread
 BINDINGS = alsa
 BINDINGS_LINK_FLAGS = -cclib -lasound
 
-.SUBDIRS: mid gui layout tests util
+.SUBDIRS: mid gui render tests util

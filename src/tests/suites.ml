@@ -7,7 +7,7 @@ let suites = "" >::: [
    ExportTest.tests;
    ImportTest.tests;
    ImportExportTest.tests;
-   TabLayoutTest.tests;
+   TabRenderTest.tests;
    VarlenTest.tests;
 ];;
 
