@@ -8,7 +8,7 @@ let notes_printer notes =
 
 let test_simple_notes () =
    let file =
-      Import.import_inline ~appl:false [
+      Import.import_inline [
          [
             0,   off 0 0 127; (* lonely off *)
             0,   on  0 0 64 ; (* 1 terminated by on *)

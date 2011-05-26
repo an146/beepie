@@ -2,7 +2,7 @@ open Batteries
 open MidiAsm
 open MidiFile
 open OUnit
-open TabRender
+open TabLayout
 
 let strings = [40; 45; 50; 55; 59; 64]
 

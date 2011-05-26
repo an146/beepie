@@ -1,0 +1,8 @@
+FILES[] =
+   applicature
+   tabLayout
+
+OCAMLINCLUDES += ../util ../mid
+OCAML_LIBS += ../util/libutil ../mid/libmid
+
+OCamlLibrary(liblayout, $(FILES))

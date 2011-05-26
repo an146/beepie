@@ -9,12 +9,12 @@ TESTS[] =
    exportTest
    importTest
    importExportTest
-   tabRenderTest
+   tabLayoutTest
    varlenTest
    suites
 
-OCAMLINCLUDES += ../mid
-OCAML_LIBS += ../mid/libmid
+OCAMLINCLUDES += ../util ../mid ../layout
+OCAML_LIBS += ../util/libutil ../mid/libmid ../layout/liblayout
 
 .PHONY: tester tester-debug
 tester: $(OCamlProgram tester, $(TESTS) tester)

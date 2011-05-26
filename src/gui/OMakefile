@@ -14,8 +14,9 @@ FILES[] =
 
 PROGRAM = gui
 
-OCAMLINCLUDES += ../mid
-OCAML_LIBS += ../mid/libmid
+OCAMLINCLUDES += ../util ../mid ../layout
+OCAML_LIBS += ../util/libutil ../mid/libmid ../layout/liblayout
+
 OCAML_CLIBS += ../mid/bindings
 OCAML_LINK_FLAGS += $(BINDINGS_LINK_FLAGS)
 

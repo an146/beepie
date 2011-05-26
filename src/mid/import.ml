@@ -54,7 +54,7 @@ let parse_chunks (input, inoffset) =
    in
    Enum.from_while get_chunk
 
-let import_events ?(division = 240) ?(appl = true) events =
+let import_events ?(division = 240) events =
    let file = ref (F.create division) in
    let notes = Array.init 16 (fun _ -> Array.make 128 None) in
    let off channel midipitch etime evel =
@@ -126,23 +126,18 @@ let import_events ?(division = 240) ?(appl = true) events =
    let head_track = F.track 0 !file in
    if Enum.is_empty (F.channels head_track !file) then
       file := F.remove_track head_track !file;
-   if appl then (
-      Enum.iter (fun t ->
-         Applicature.update (!file, t) [40; 45; 50; 55; 59; 64]
-      ) (F.tracks !file)
-   );
    !file
 
-let import_events ?division ?appl t =
-   try import_events ?division ?appl t
+let import_events ?division t =
+   try import_events ?division t
    with End_of_file -> failwith "unexpected end of file"
 
-let import_events2 ?division ?appl tracks =
+let import_events2 ?division tracks =
    let interleaved =
       let f i e = e /@ fun (t, c) -> t, i, c in
       tracks |> Enum.mapi f |> MiscUtils.enum_merge2 compare
    in
-   import_events ?division ?appl interleaved
+   import_events ?division interleaved
 
 let import_input input =
    let chunks = parse_chunks (pos_in input) in
@@ -160,9 +155,9 @@ let import_input input =
    let tracks = chunks // (fun c -> c.magic = "MTrk") /@ parse_track_chunk in
    import_events2 ~division tracks
 
-let import_inline ?division ?appl tracks =
+let import_inline ?division tracks =
    let tracks = List.enum tracks /@ List.enum in
-   import_events2 ?division ?appl tracks
+   import_events2 ?division tracks
 
 let import_file filename =
    let c = open_in_bin filename in

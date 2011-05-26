@@ -1,5 +1,6 @@
 SRC_DIRS[] =
    gui
+   layout
    mid
    tests
    util

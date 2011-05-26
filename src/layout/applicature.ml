@@ -48,4 +48,9 @@ let update (file, track) strings =
    let a = Enum.fold place init notes |> Enum.get |> Option.get in
    List.iter (fun (n, s) -> n.str <- s) (fst a)
 
+let update_file file strings =
+   Enum.iter (fun t ->
+      update (!file, t) [40; 45; 50; 55; 59; 64]
+      ) (F.tracks !file)
+
 (* vim: set ts=3 sw=3 tw=80 : *)

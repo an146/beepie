@@ -5,7 +5,7 @@ open GtkSugar
 open MidiFile
 open MidiNote
 open React
-open TabRender
+open TabLayout
 open TabWidgetStyle
 module C = Cairo
 module CG = Cairo_lablgtk
