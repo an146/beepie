@@ -44,8 +44,10 @@ let refresh_layout ?f tw =
    let f = Option.default (file tw) f in
    TabLayout.refresh tw.layout f tw.tracks
 
+let width tw = (fl tw.area#width) /. xunit
+
 let space_size tw w =
-   let cw = (fl tw.area#width) /. xunit in
+   let cw = width tw in
    let cw = cw -. Style.left_margin -. Style.right_margin in
    TabX.space_size w cw
 
@@ -110,7 +112,7 @@ let render_row tw c (e, i) =
    |> measurebar
 
 let rows tw =
-   TabLayout.enum_rows tw.layout (fl tw.area#width)
+   TabLayout.enum_rows tw.layout (width tw)
 
 let expose tw r =
    let c = CG.create tw.area#bin_window in
@@ -170,7 +172,8 @@ let create file_s =
 let set_tracks tw ts =
    tw.tracks <- ts;
    refresh_layout tw;
-   readjust_height tw
+   readjust_height tw;
+   redraw tw
 
 class tabwidget file_s =
    let file_s = S.trace (fun f -> Applicature.update_file f strings) file_s in
@@ -182,9 +185,7 @@ class tabwidget file_s =
 
       initializer
          attach_signal (
-            S.trace (fun f ->
-               refresh_layout ~f tw;
-            ) file_s
+            S.trace (fun f -> refresh_layout ~f tw) file_s
          ) tw.sw
    end
 
