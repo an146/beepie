@@ -15,8 +15,8 @@ module R = Gdk.Rectangle
 type tw = {
    file_s : file S.t;
    mutable tracks : track_id list;
-   mwidth : TabX.t DynArray.t;
-   tab : GPack.layout;
+   layout : TabLayout.t;
+   area : GPack.layout;
    sw : GBin.scrolled_window;
 }
 
@@ -38,72 +38,21 @@ let strings = [40; 45; 50; 55; 59; 64]
 let file tw = S.value tw.file_s
 
 let redraw tw =
-   queue_draw tw.tab#coerce
+   queue_draw tw.area#coerce
 
-let update_mwidth tw =
-   let f = file tw in
-   DynArray.clear tw.mwidth;
-   F.measures f |> Vect.enum |> Enum.map (fun m ->
-      let w =
-         let get_endpoint elt =
-            let len = TabX.text elt.text in
-            elt.x +: len
-         in
-         render_measure f tw.tracks m
-         |> Enum.map get_endpoint
-         |> Enum.fold TabX.max TabX.zero
-      in
-      (* empty measure contains 1 empty column *)
-      let w = if w > TabX.zero then w else w +: TabX.char in
-      (* measure delimiting space *)
-      w +: TabX.spacesi 2
-   ) |> Enum.iter (DynArray.add tw.mwidth);
-   redraw tw
+let refresh_layout ?f tw =
+   let f = Option.default (file tw) f in
+   TabLayout.refresh tw.layout f tw.tracks
 
 let space_size tw w =
-   let cw = (fl tw.tab#width) /. xunit in
+   let cw = (fl tw.area#width) /. xunit in
    let cw = cw -. Style.left_margin -. Style.right_margin in
    TabX.space_size w cw
-
-let rows tw =
-   if DynArray.empty tw.mwidth then
-      update_mwidth tw;
-   let mwidth i = DynArray.get tw.mwidth i in
-   let i = ref 0 in
-   Enum.from (fun () ->
-      let q = Queue.create () in
-      let push () =
-         Queue.push !i q;
-         incr i;
-      in
-      (try
-         let s = ref (mwidth !i) in
-         push ();
-         while true do
-            let s' = !s +: mwidth !i in
-            let penalty s =
-               let ssize = space_size tw s in
-               Float.abs (1.3 -. ssize)
-               +. (if ssize < 0.9 then 10.0 else 0.0)
-            in
-            if penalty s' > penalty !s then
-               failwith "it's enough";
-            s := s';
-            push ()
-         done
-      with _ -> ());
-      if Queue.is_empty q then
-         raise Enum.No_more_elements
-      else
-         Queue.enum q
-   )
 
 let render_row tw c (e, i) =
    let h = row_height tw in
    let y = fl i *. h in
-   let w =
-      Enum.clone e |> Enum.map (DynArray.get tw.mwidth) |> Enum.reduce (+:)
-   in
+   let w = TabLayout.row_width tw.layout e in
    let ssize = space_size tw w in
    let cx = cx ssize and cw = cw ssize in
    let move_to x y = C.move_to c ~x:(cx x) ~y:(cy y) in
@@ -155,13 +104,16 @@ let render_row tw c (e, i) =
          C.stroke c;
          *)
       in
-      x +: DynArray.get tw.mwidth m;
+      x +: TabLayout.measure_width tw.layout m;
    in
    Enum.fold render_measure TabX.zero e
    |> measurebar
 
+let rows tw =
+   TabLayout.enum_rows tw.layout (fl tw.area#width)
+
 let expose tw r =
-   let c = CG.create tw.tab#bin_window in
+   let c = CG.create tw.area#bin_window in
    let _ = (* Fill background *)
       set_source_color c Style.background;
       CG.rectangle c r;
@@ -186,10 +138,11 @@ let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
 
 let readjust_height tw =
    let h = Style.top_margin +. calc_height tw +. Style.bottom_margin in
-   ch h |> truncate |> tw.tab#set_height
+   ch h |> truncate |> tw.area#set_height
 
 let resize tw {Gtk.width = rw} =
-   tw.tab#set_width rw;
+   tw.area#set_width rw;
+   refresh_layout tw;
    readjust_height tw;
    redraw tw
 
@@ -199,29 +152,40 @@ let vscroll tw a =
 let create file_s =
    let tw =
       let sw = GBin.scrolled_window ~hpolicy:`NEVER () in
-      let tab = GPack.layout ~packing:sw#add () in
-      {
+      let area = GPack.layout ~packing:sw#add () in
+      let rec tw = {
          file_s;
          tracks = [1002] |> Obj.magic;
-         mwidth = DynArray.create ();
+         layout = TabLayout.create ();
          sw;
-         tab;
-      }
+         area;
+      } in
+      tw
    in
-   expose_callback (fun _ ev -> expose tw (Expose.area ev)) tw.tab;
-   resize_callback (fun _ r -> resize tw r) tw.tab;
-   vadj_changed_callback (fun _ a -> vscroll tw a) tw.tab;
+   expose_callback (fun _ ev -> expose tw (Expose.area ev)) tw.area;
+   resize_callback (fun _ r -> resize tw r) tw.area;
+   vadj_changed_callback (fun _ a -> vscroll tw a) tw.area;
    tw
 
+let set_tracks tw ts =
+   tw.tracks <- ts;
+   refresh_layout tw;
+   readjust_height tw
+
 class tabwidget file_s =
+   let file_s = S.trace (fun f -> Applicature.update_file f strings) file_s in
    let tw = create file_s in
    object (self)
       inherit pseudo_widget tw.sw
 
-      method set_tracks ts =
-         tw.tracks <- ts;
-         update_mwidth tw;
-         readjust_height tw
+      method set_tracks ts = set_tracks tw ts
+
+      initializer
+         attach_signal (
+            S.trace (fun f ->
+               refresh_layout ~f tw;
+            ) file_s
+         ) tw.sw
    end
 
 (* vim: set ts=3 sw=3 tw=80 : *)

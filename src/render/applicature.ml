@@ -50,7 +50,7 @@ let update (file, track) strings =
 
 let update_file file strings =
    Enum.iter (fun t ->
-      update (!file, t) [40; 45; 50; 55; 59; 64]
-      ) (F.tracks !file)
+      update (file, t) strings
+      ) (F.tracks file)
 
 (* vim: set ts=3 sw=3 tw=80 : *)
