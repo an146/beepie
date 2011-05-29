@@ -157,6 +157,6 @@ class file_widget initfile =
          | _ -> failwith "nothing to redo"
    end
 
-let file_widget = new file_widget
+let file_widget f = new file_widget f
 
 (* vim: set ts=3 sw=3 tw=80 : *)
