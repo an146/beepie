@@ -48,8 +48,7 @@ let refresh_layout ?f tw =
 let width tw = (fl tw.area#width) /. xunit
 
 let space_size tw w =
-   let cw = width tw in
-   let cw = cw -. Style.left_margin -. Style.right_margin in
+   let cw = width tw -. Style.left_margin -. Style.right_margin in
    TabX.space_size w cw
 
 let render_row tw c (e, i) =
@@ -109,8 +108,8 @@ let render_row tw c (e, i) =
       in
       x +: TabLayout.measure_width tw.layout m;
    in
-   Enum.fold render_measure TabX.zero e
-   |> measurebar
+   let endx = Enum.fold render_measure TabX.zero e in
+   measurebar endx
 
 let rows tw =
    TabLayout.enum_rows tw.layout (width tw)
@@ -137,7 +136,9 @@ let expose tw r =
    in
    false
 
-let calc_height tw = (rows tw |> Enum.hard_count |> fl) *. row_height tw
+let calc_height tw =
+   let n = rows tw |> Enum.hard_count in
+   fl n *. row_height tw
 
 let readjust_height tw =
    let h = Style.top_margin +. calc_height tw +. Style.bottom_margin in
