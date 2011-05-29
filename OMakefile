@@ -1,25 +1,37 @@
-SRC_DIRS[] =
-   gui
-   mid
-   render
-   tests
-   util
+USE_OCAMLFIND = true
 
-vmount(-l, src, _build)
+if $(not $(OCAMLFIND_EXISTS))
+   eprintln(This project requires ocamlfind, but is was not found.)
+   eprintln(You need to install ocamlfind and run "omake --configure".)
+   exit 1
+
+OCAMLPACKS[] +=
+   batteries
+
+OCAMLFLAGS += -thread
+OCAML_LINK_FLAGS += -thread
+
+SRC_DIRS[] =
+   src
+   src/gui
+   src/mid
+   src/render
+   src/util
+   tests
+
 foreach (d, $(SRC_DIRS))
    mkdir -p _build/$(d)
-   vmount(-l, src/$(d), _build/$(d))
-   # WTF: vmount is scoped, but works without export
-   # export
+   vmount(-l, $(d), _build/$(d))
+   export
 
-.SUBDIRS: _build
+.SUBDIRS: _build/src _build/tests
 
 .PHONY: all
 all: gui tester
 
 .PHONY: test-gui
 test-gui: gui
-   ./_build/gui/gui
+   ./_build/src/gui/gui
 
 .PHONY: test
 test: all

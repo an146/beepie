@@ -1,20 +1,10 @@
-USE_OCAMLFIND = true
-
-if $(not $(OCAMLFIND_EXISTS))
-   eprintln(This project requires ocamlfind, but is was not found.)
-   eprintln(You need to install ocamlfind and run "omake --configure".)
-   exit 1
-
 OCAMLPACKS[] +=
-   batteries
    react
 
 CFLAGS += -I $(shell ocamlc -where)
-OCAMLFLAGS += -thread
-OCAMLDEPFLAGS +=
-OCAML_LINK_FLAGS += -thread
+# OCAMLDEPFLAGS +=
 
 BINDINGS = alsa
 BINDINGS_LINK_FLAGS = -cclib -lasound
 
-.SUBDIRS: mid gui render tests util
+.SUBDIRS: mid gui render util

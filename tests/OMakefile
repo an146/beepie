@@ -1,5 +1,4 @@
 OCAMLPACKS[] +=
-   batteries
    oUnit
 
 TESTS[] =
@@ -13,8 +12,8 @@ TESTS[] =
    varlenTest
    suites
 
-OCAMLINCLUDES += ../util ../mid ../render
-OCAML_LIBS += ../util/libutil ../mid/libmid ../render/liblayout
+OCAMLINCLUDES += ../src/util ../src/mid ../src/render
+OCAML_LIBS += ../src/util/libutil ../src/mid/libmid ../src/render/liblayout
 
 .PHONY: tester tester-debug
 tester: $(OCamlProgram tester, $(TESTS) tester)
