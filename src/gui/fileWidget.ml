@@ -14,6 +14,8 @@ type fw = {
    hist_s : (file * string) zipper S.t;
    set_hist : (file * string) zipper -> unit;
    file_s : file S.t;
+   tracks_s : track_id list S.t;
+   set_tracks : track_id list -> unit;
    box : widget;
    tab : tabwidget;
    trtable : GPack.table;
@@ -57,7 +59,7 @@ let init_trtable_row fw i =
    in
    let row = [
       `fill,   btn (string_of_int (i + 1)) (fun () -> 
-         fw.tab#set_tracks [S.value track_s |> snd]
+         fw.set_tracks [S.value track_s |> snd]
       );
       sep ();
       `fill,   btn "M" (fun () -> ());
@@ -98,8 +100,9 @@ let create initfile =
       | (f, _) :: _, _ -> f
       | _ -> initfile
    ) in
+   let tracks_s, set_tracks = S.create ([1002] |> Obj.magic) in
    let trtable = GPack.table () in
-   let tab = new tabwidget file_s in
+   let tab = new tabwidget file_s tracks_s in
    let box = vbox [
       `fill,   trtable#coerce;
       `fill,   separator `HORIZONTAL;
@@ -108,7 +111,10 @@ let create initfile =
       ]
    ] in
    let trtable_rows = Stack.create () in
-   let fw = {hist_s; set_hist; file_s; box; tab; trtable; trtable_rows} in
+   let fw = {
+      hist_s; set_hist; file_s; tracks_s; set_tracks;
+      box; tab; trtable; trtable_rows
+   } in
    attach_signal (
       S.map (set_tracks_count fw) (S.map F.tracks_count file_s)
    ) trtable;
