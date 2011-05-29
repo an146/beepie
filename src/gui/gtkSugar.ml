@@ -135,6 +135,14 @@ let button ?callbacks ?relief label_s =
   connect_callbacks ?callbacks btn;
   btn#coerce
 
+let toggle_button ?callbacks ?relief label_s active_s =
+  let label = S.value label_s in
+  let btn = GButton.toggle_button ?relief ~label () in
+  attach_signal (S.trace btn#set_label label_s) btn;
+  attach_signal (S.trace btn#set_active active_s) btn;
+  connect_callbacks ?callbacks btn;
+  btn#coerce
+
 (** Drawing area *)
 let drawing_area ?callbacks width height =
   let area = GMisc.drawing_area ~width ~height () in

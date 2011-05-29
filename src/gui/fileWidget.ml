@@ -29,6 +29,16 @@ let commit fw desc f =
    (l, r) -> fw.set_hist ((f, desc) :: l, [])
 
 let init_trtable_row fw i =
+   let track_s =
+      let eq (f, t) (f', t') = f == f' && t = t' in
+      S.map ~eq (fun f -> f, F.track i f) fw.file_s
+   in
+   let volume_s = S.map (F.volume) track_s in
+   let set_volume v =
+      let ft = S.value track_s in
+      if F.volume ft != v then
+         commit fw "Set Volume" (F.set_volume v ft)
+   in
    let attach j (exp, w) =
       w#misc#set_can_focus false;
       if j >= fw.trtable#columns then (
@@ -41,45 +51,42 @@ let init_trtable_row fw i =
       in
       fw.trtable#attach ~left:j ~top:i ~expand w;
    in
-   let btn_s lbl_s clb = button ~relief:`NONE ~callbacks:[
+   let btn lbl_s clb = button ~relief:`NONE ~callbacks:[
       button_callback (fun _ _ -> clb (); false)
    ] lbl_s in
-   let btn lbl = btn_s (S.const lbl) in
    let sep () = `fill, separator `VERTICAL in
-
-   let track_s =
-      let eq (f, t) (f', t') = f == f' && t = t' in
-      S.map ~eq (fun f -> f, F.track i f) fw.file_s
-   in
-   let volume_s = S.map (F.volume) track_s in
-   let set_volume v =
-      let ft = S.value track_s in
-      if F.volume ft != v then
-         commit fw "Set Volume" (F.set_volume v ft)
-   in
-   let row = [
-      `fill,   btn (string_of_int (i + 1)) (fun () -> 
+   let track_number =
+      let lbl = string_of_int (i + 1) in
+      btn (S.const lbl) (fun () ->
          fw.set_tracks [S.value track_s |> snd]
-      );
-      sep ();
-      `fill,   btn "M" (fun () -> ());
-      sep ();
-      `fill,   btn "S" (fun () -> ());
-      sep ();
-      `expand, btn_s (S.map (uncurry F.track_name) track_s) (fun () ->
+      )
+   and mute =
+      btn (S.const "M") (fun () -> ())
+   and solo =
+      btn (S.const "S") (fun () -> ())
+   and track_name =
+      btn (S.map (uncurry F.track_name) track_s) (fun () ->
          Option.may (fun name ->
             let f = track_s |> S.value |> uncurry (F.set_track_name name) in
             commit fw "Set Track Name" f
          ) (input_string ~title:"Set track name" "Enter track name:")
-      );
-      sep ();
-      `expand, btn "Instr" (fun () -> ());
-      sep ();
-      `expand, slider ~signal:(S.map float_of_int volume_s)
-      ~callback:(int_of_float |- set_volume)
-      ~move_callback:(Printf.printf "move: %f\n%!")
-      ~step_incr:1.0 ~page_incr:7.0
-      `HORIZONTAL (0.0, 127.0);
+      )
+   and instr =
+      btn (S.const "Instr") (fun () -> ())
+   and volume =
+      slider ~signal:(S.map float_of_int volume_s)
+             ~callback:(int_of_float |- set_volume)
+             ~move_callback:(Printf.printf "move: %f\n%!")
+             ~step_incr:1.0 ~page_incr:7.0
+             `HORIZONTAL (0.0, 127.0)
+   in
+   let row = [
+              `fill,   track_number;
+      sep (); `fill,   mute;
+      sep (); `fill,   solo;
+      sep (); `expand, track_name;
+      sep (); `expand, instr;
+      sep (); `expand, volume
    ] in
    List.iteri attach row;
    Stack.push (List.map snd row) fw.trtable_rows

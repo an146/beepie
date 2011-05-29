@@ -87,6 +87,13 @@ val button :
   string S.t ->
   widget
 
+val toggle_button :
+  ?callbacks:(GButton.toggle_button -> unit) list ->
+  ?relief:Gtk.Tags.relief_style ->
+  string S.t ->
+  bool S.t ->
+  widget
+
 (** Drawing area widget which can be used for custom widgets *)
 val drawing_area :
   ?callbacks:(GMisc.drawing_area -> unit) list ->
