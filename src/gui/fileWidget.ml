@@ -29,13 +29,14 @@ let commit fw desc f =
    (l, r) -> fw.set_hist ((f, desc) :: l, [])
 
 let init_trtable_row fw i =
-   let track_s =
+   let ftrack_s =
       let eq (f, t) (f', t') = f == f' && t = t' in
       S.map ~eq (fun f -> f, F.track i f) fw.file_s
    in
-   let volume_s = S.map (F.volume) track_s in
+   let track_s = S.l1 snd ftrack_s in
+   let volume_s = S.map (F.volume) ftrack_s in
    let set_volume v =
-      let ft = S.value track_s in
+      let ft = S.value ftrack_s in
       if F.volume ft != v then
          commit fw "Set Volume" (F.set_volume v ft)
    in
@@ -57,17 +58,20 @@ let init_trtable_row fw i =
    let sep () = `fill, separator `VERTICAL in
    let track_number =
       let lbl = string_of_int (i + 1) in
-      btn (S.const lbl) (fun () ->
-         fw.set_tracks [S.value track_s |> snd]
-      )
+      toggle_button ~relief:`NONE ~callbacks:[
+         button_callback (fun _ _ ->
+            fw.set_tracks [S.value track_s];
+            true
+         )
+      ] (S.const lbl) (S.l2 List.mem track_s fw.tracks_s)
    and mute =
       btn (S.const "M") (fun () -> ())
    and solo =
       btn (S.const "S") (fun () -> ())
    and track_name =
-      btn (S.map (uncurry F.track_name) track_s) (fun () ->
+      btn (S.map (uncurry F.track_name) ftrack_s) (fun () ->
          Option.may (fun name ->
-            let f = track_s |> S.value |> uncurry (F.set_track_name name) in
+            let f = ftrack_s |> S.value |> uncurry (F.set_track_name name) in
             commit fw "Set Track Name" f
          ) (input_string ~title:"Set track name" "Enter track name:")
       )
