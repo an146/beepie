@@ -26,6 +26,9 @@ foreach (d, $(SRC_DIRS))
 
 .SUBDIRS: _build/src _build/tests
 
+.PHONY: gui
+gui: beepie
+
 .PHONY: all
 all: gui tester
 

@@ -12,7 +12,7 @@ FILES[] =
    tabWidget
    tabWidgetStyle
 
-PROGRAM = gui
+PROGRAM = beepie
 
 OCAMLINCLUDES += ../util ../mid ../render
 OCAML_LIBS += ../util/libutil ../mid/libmid ../render/liblayout
@@ -20,6 +20,6 @@ OCAML_LIBS += ../util/libutil ../mid/libmid ../render/liblayout
 OCAML_CLIBS += ../mid/bindings
 OCAML_LINK_FLAGS += $(BINDINGS_LINK_FLAGS)
 
-.PHONY: gui
-gui: $(OCamlProgram $(PROGRAM), $(FILES))
+.PHONY: beepie
+beepie: $(OCamlProgram $(PROGRAM), $(FILES))
 

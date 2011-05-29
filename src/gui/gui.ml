@@ -116,8 +116,6 @@ let create_main_window () =
       ~callbacks:[Player.stop]
       ~accel
       ~title:"beepie"
-      ~wm_name:"beepie"
-      ~wm_class:"beepie"
    (
       vbox [
          `fill, menubar ~accel [
