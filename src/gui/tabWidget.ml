@@ -1,4 +1,5 @@
 open Batteries
+open CairoUtils
 open Gdk
 open GdkEvent
 open GtkSugar

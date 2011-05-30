@@ -5,10 +5,13 @@ OCAMLPACKS[] +=
    unix
 
 FILES[] =
+   cairoUtils
    fileDialog
    fileWidget
    gtkSugar
    gui
+   pianoWidget
+   pianoWidgetStyle
    tabWidget
    tabWidgetStyle
 

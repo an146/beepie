@@ -4,6 +4,7 @@ open GtkBase
 open GtkSugar
 open MidiFile
 open MidiNote
+open PianoWidget
 open React
 open TabWidget
 module R = Gdk.Rectangle
@@ -18,6 +19,7 @@ type fw = {
    set_tracks : track_id list -> unit;
    box : widget;
    tab : tabwidget;
+   piano : pianowidget;
    trtable : GPack.table;
    trtable_rows : widget list Stack.t;
 }
@@ -114,17 +116,19 @@ let create initfile =
    let tracks_s, set_tracks = S.create ([1002] |> Obj.magic) in
    let trtable = GPack.table () in
    let tab = new tabwidget file_s tracks_s in
+   let piano = new pianowidget file_s (S.l1 List.hd tracks_s) in
    let box = vbox [
       `fill,   trtable#coerce;
       `fill,   separator `HORIZONTAL;
       `expand, notebook ~show_tabs:false [
-         tab#coerce
+         (*tab#coerce*)
+         piano#coerce
       ]
    ] in
    let trtable_rows = Stack.create () in
    let fw = {
       hist_s; set_hist; file_s; tracks_s; set_tracks;
-      box; tab; trtable; trtable_rows
+      box; tab; piano; trtable; trtable_rows
    } in
    attach_signal (
       S.map (set_tracks_count fw) (S.map F.tracks_count file_s)
