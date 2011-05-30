@@ -12,6 +12,7 @@ open TabX.Infix
 module C = Cairo
 module CG = Cairo_lablgtk
 module R = Gdk.Rectangle
+module Style = TabWidgetStyle
 
 type tw = {
    file_s : file S.t;
