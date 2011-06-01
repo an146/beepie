@@ -77,8 +77,7 @@ let render_row tw c (e, i) =
    let rect ~x ~y ~w ~h =
       C.rectangle c ~x:(cx x) ~y:(cy y) ~width:(cw w) ~height:(ch h)
    in
-   let _ = rect in
-   let _ = (* strings *)
+   let string_lines () =
       set_source_color c Style.string_color;
       for i = 0 to List.length strings - 1 do
          let y = y +. h -. 0.5 -. fl i in
@@ -93,14 +92,13 @@ let render_row tw c (e, i) =
       line_to x (y +. h -. 0.5 -. fl (List.length strings - 1));
       C.stroke c
    in
-   let render_measure x m =
-      measurebar x;
-      let _ = (* measure number *)
+   let measure x m =
+      let measure_number () =
          select_font c Style.measure_font;
          set_source_color c Style.measure_color;
          C.move_to c ~x:(cx (x +: Style.measure_x)) ~y:(cy (y +. Style.measure_y));
          C.show_text c (string_of_int (m + 1));
-      and _ = (* notes *)
+      and notes () =
          select_font c Style.font;
          Vect.get (F.measures (file tw)) m
          |> render_measure (file tw) (tracks tw)
@@ -114,21 +112,25 @@ let render_row tw c (e, i) =
             C.move_to c ~x:(cx x) ~y:(cy y);
             C.show_text c elt.text
          )
-         (*
-      and _ = (* measure bounding box *)
+      and measure_box () =
          set_source_color c Style.foreground;
          rect ~x ~y ~w ~h;
          C.stroke c;
-         *)
       in
+      measure_number ();
+      notes ();
+      measure_box |> ignore;
       x +: TabLayout.measure_width tw.layout m;
    in
-   let endx = Enum.fold render_measure TabX.zero e in
-   measurebar endx
+   string_lines ();
+   Enum.fold (fun x m ->
+      measurebar x;
+      measure x m
+   ) TabX.zero e |> measurebar
 
 let expose tw r =
    let c = CG.create tw.area#bin_window in
-   let _ = (* Fill background *)
+   let () = (* Fill background *)
       set_source_color c Style.background;
       CG.rectangle c r;
       C.fill c;

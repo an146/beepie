@@ -23,7 +23,7 @@ let track pw = S.value pw.track_s
 
 let expose tw r =
    let c = CG.create tw.area#bin_window in
-   let _ = (* Fill background *)
+   let () = (* Fill background *)
       set_source_color c Style.background;
       CG.rectangle c r;
       C.fill c;
