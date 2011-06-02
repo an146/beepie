@@ -38,14 +38,27 @@ let cy y = Style.top_margin *. yunit +. (ch y)
 
 let strings = [40; 45; 50; 55; 59; 64]
 
+let width tw = (fl tw.area#width) /. xunit
+
+let rows tw =
+   TabLayout.enum_rows tw.layout (width tw)
+
 let redraw tw =
    queue_draw tw.area#coerce
 
+let calc_height tw =
+   let n = rows tw |> Enum.hard_count in
+   fl n *. row_height tw
+
+let readjust_height tw =
+   let h = Style.top_margin +. calc_height tw +. Style.bottom_margin in
+   ch h |> truncate |> tw.area#set_height
+
 let refresh_layout ?f tw =
    let f = Option.default (file tw) f in
-   TabLayout.refresh tw.layout f (tracks tw)
-
-let width tw = (fl tw.area#width) /. xunit
+   TabLayout.refresh tw.layout f (tracks tw);
+   readjust_height tw;
+   redraw tw
 
 let space_size tw w =
    let cw = width tw -. Style.left_margin -. Style.right_margin in
@@ -111,9 +124,6 @@ let render_row tw c (e, i) =
    let endx = Enum.fold render_measure TabX.zero e in
    measurebar endx
 
-let rows tw =
-   TabLayout.enum_rows tw.layout (width tw)
-
 let expose tw r =
    let c = CG.create tw.area#bin_window in
    let _ = (* Fill background *)
@@ -136,19 +146,9 @@ let expose tw r =
    in
    false
 
-let calc_height tw =
-   let n = rows tw |> Enum.hard_count in
-   fl n *. row_height tw
-
-let readjust_height tw =
-   let h = Style.top_margin +. calc_height tw +. Style.bottom_margin in
-   ch h |> truncate |> tw.area#set_height
-
 let resize tw {Gtk.width = rw} =
    tw.area#set_width rw;
-   refresh_layout tw;
-   readjust_height tw;
-   redraw tw
+   refresh_layout tw
 
 let vscroll tw a =
    ()
@@ -183,9 +183,7 @@ class tabwidget file_s tracks_s =
             refresh_layout ~f tw
          );
          track_changes tracks_s (fun _ ->
-            refresh_layout tw;
-            readjust_height tw;
-            redraw tw
+            refresh_layout tw
          )
    end
 
